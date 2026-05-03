@@ -16,8 +16,12 @@ on:
         options: [apply, destroy]
 
       confirm_destroy:
-        description: "Type YES to confirm destroy"
-        required: false
+        description: "Please confirm the action"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
 
 permissions:
   id-token: write
@@ -77,23 +81,25 @@ jobs:
       id: plan
       shell: bash
       run: |
-        set -o pipefail
+        set +e
 
-        EXIT_CODE=0
         terraform plan \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
-          -out=tfplan || EXIT_CODE=$?
+          -out=tfplan
+
+        EXIT_CODE=$?
 
         echo "exitcode=$EXIT_CODE" >> $GITHUB_OUTPUT
+        echo "Terraform exit code: $EXIT_CODE"
 
         if [ "$EXIT_CODE" -eq 1 ]; then
           echo "❌ Terraform plan failed"
           exit 1
-        elif [ "$EXIT_CODE" -eq 2 ]; then
-          echo "✅ Terraform plan has changes"
-        else
-          echo "✅ No changes"
         fi
+
+        echo "✅ Terraform plan completed successfully"
+
+
     # ---------------- SHOW PLAN ----------------
     - name: Show Plan Output
       run: terraform show -no-color tfplan
