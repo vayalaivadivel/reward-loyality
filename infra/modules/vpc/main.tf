@@ -53,8 +53,6 @@ resource "aws_nat_gateway" "nat" {
   tags = {
     Name = "${var.project}-nat-${var.env}"
   }
-
-  depends_on = [aws_internet_gateway.this]
 }
 
 resource "aws_route_table" "public" {
