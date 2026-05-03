@@ -26,7 +26,8 @@ concurrency:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 60   # 👈 IMPORTANT
+    
     environment: ${{ github.event.inputs.environment }}
 
     defaults:
