@@ -1,0 +1,91 @@
+name: Terraform Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+      action:
+        description: "Choose action"
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+
+      confirm_destroy:
+        description: "Type YES to confirm destroy (required for destroy)"
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.event.inputs.environment }}
+
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ap-south-1
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    # ---------------- INIT ----------------
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="key=reward_loyality/${{ github.event.inputs.environment }}/terraform.tfstate"
+
+    # ---------------- VALIDATE ----------------
+    - name: Terraform Validate
+      run: terraform validate
+
+    # ---------------- PLAN ----------------
+    - name: Terraform Plan
+      run: |
+        terraform plan \
+          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
+
+    # ---------------- SAFETY CHECK (DESTROY) ----------------
+    - name: Validate Destroy Confirmation
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        if [ "${{ github.event.inputs.confirm_destroy }}" != "YES" ]; then
+          echo "❌ Destroy requires confirm_destroy=YES"
+          exit 1
+        fi
+
+    # ---------------- APPLY ----------------
+    - name: Terraform Apply
+      if: github.event.inputs.action == 'apply'
+      run: |
+        terraform apply -auto-approve \
+          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
+
+    # ---------------- DESTROY ----------------
+    - name: Terraform Destroy
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        terraform destroy -auto-approve \
+          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
