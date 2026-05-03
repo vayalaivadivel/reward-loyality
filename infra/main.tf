@@ -7,10 +7,19 @@ module "vpc" {
   private_subnets = var.private_subnets
 }
 
-module "s3" {
-  source = "./modules/s3"
+module "s3_bronze" {
+  source      = "./modules/s3"
+  bucket_name = local.bronze_bucket
+}
 
-  bucket_name = local.s3_name
+module "s3_silver" {
+  source      = "./modules/s3"
+  bucket_name = local.silver_bucket
+}
+
+module "s3_gold" {
+  source      = "./modules/s3"
+  bucket_name = local.gold_bucket
 }
 
 module "iam" {

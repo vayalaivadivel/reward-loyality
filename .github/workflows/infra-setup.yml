@@ -15,19 +15,10 @@ on:
         type: choice
         options: [apply, destroy]
 
-      confirm_destroy:
-        description: "Confirm the action?"
-        required: true
-        type: choice
-        options:
-          - "no"
-          - "yes"
-
 permissions:
   id-token: write
   contents: read
 
-# 🚀 Prevent parallel runs (fix DynamoDB lock issues)
 concurrency:
   group: terraform-${{ github.event.inputs.environment }}
   cancel-in-progress: false
@@ -45,7 +36,6 @@ jobs:
     env:
       TF_IN_AUTOMATION: true
 
-      # 🔐 Secure variables (DO NOT keep in tfvars)
       TF_VAR_databricks_host: ${{ secrets.DATABRICKS_HOST }}
       TF_VAR_databricks_token: ${{ secrets.DATABRICKS_TOKEN }}
 
@@ -59,7 +49,6 @@ jobs:
         role-to-assume: arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
         aws-region: ap-south-1
 
-    # 🔥 IMPORTANT: disable wrapper (fix exit code issue)
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
@@ -79,55 +68,26 @@ jobs:
     - name: Terraform Format Check
       run: terraform fmt -check
 
-    # ---------------- PLAN (FIXED) ----------------
-    - name: Terraform Plan (FULL DEBUG)
+    # ---------------- PLAN ----------------
+    - name: Terraform Plan
       shell: bash
       run: |
         set +e
 
         terraform plan \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
-          -out=tfplan 2>&1 | tee plan.log
+          -out=tfplan
 
         EXIT_CODE=$?
 
-        echo "=========================="
-        echo "FULL PLAN LOG:"
-        cat plan.log
-        echo "=========================="
-
         echo "Terraform exit code: $EXIT_CODE"
 
-        exit 0
-
-        echo "✅ Terraform plan succeeded"
-
-    # ---------------- SHOW PLAN ----------------
-    - name: Show Plan Output
-      run: terraform show -no-color tfplan
-
-    # ---------------- UPLOAD PLAN ----------------
-    - name: Upload Plan Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: tfplan-${{ github.event.inputs.environment }}
-        path: infra/tfplan
-
-    # ---------------- DESTROY SAFETY ----------------
-    - name: Validate Destroy Confirmation
-      if: github.event.inputs.action == 'destroy'
-      run: |
-        if [ "${{ github.event.inputs.confirm_destroy }}" != "yes" ]; then
-          echo "❌ Destroy requires confirmation = yes"
+        if [ "$EXIT_CODE" -eq 1 ]; then
+          echo "❌ Terraform plan failed"
           exit 1
         fi
 
-    # 🔥 OPTIONAL (recommended): block prod destroy
-    - name: Block Prod Destroy
-      if: github.event.inputs.action == 'destroy' && github.event.inputs.environment == 'prod'
-      run: |
-        echo "❌ Destroy not allowed for PROD"
-        exit 1
+        echo "✅ Plan successful"
 
     # ---------------- APPLY ----------------
     - name: Terraform Apply
@@ -135,6 +95,12 @@ jobs:
       run: terraform apply -auto-approve tfplan
 
     # ---------------- DESTROY ----------------
+    - name: Block Prod Destroy
+      if: github.event.inputs.action == 'destroy' && github.event.inputs.environment == 'prod'
+      run: |
+        echo "❌ Destroy not allowed for PROD"
+        exit 1
+
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
       run: |
