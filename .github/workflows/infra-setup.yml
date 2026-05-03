@@ -75,12 +75,14 @@ jobs:
     # ---------------- PLAN ----------------
     - name: Terraform Plan
       id: plan
+      shell: bash
       run: |
+        set -o pipefail
+
+        EXIT_CODE=0
         terraform plan \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
           -out=tfplan || EXIT_CODE=$?
-
-        EXIT_CODE=${EXIT_CODE:-0}
 
         echo "exitcode=$EXIT_CODE" >> $GITHUB_OUTPUT
 
@@ -90,7 +92,7 @@ jobs:
         elif [ "$EXIT_CODE" -eq 2 ]; then
           echo "✅ Terraform plan has changes"
         else
-          echo "✅ No changes detected"
+          echo "✅ No changes"
         fi
     # ---------------- SHOW PLAN ----------------
     - name: Show Plan Output
