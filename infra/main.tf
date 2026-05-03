@@ -59,5 +59,9 @@ module "bastion" {
   sg_id            = module.vpc.default_sg_id
   key_name         = "bastion-key"
 
-  vpc_id = module.vpc.vpc_id # ✅ ADD THIS
+  vpc_id = module.vpc.vpc_id
+  rds_endpoint = module.rds.rds_endpoint
+  db_username  = var.db_username
+  db_password  = var.db_password
+  db_name      = var.db_name
 }

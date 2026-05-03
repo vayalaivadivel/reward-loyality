@@ -7,3 +7,8 @@ variable "vpc_id" {
   description = "VPC ID for security group"
   type        = string
 }
+
+variable "rds_endpoint" {}
+variable "db_username" {}
+variable "db_password" {}
+variable "db_name" {}

@@ -18,6 +18,7 @@ variable "private_subnets" {
 
 variable "db_username" {}
 variable "db_password" {}
+variable "db_name" {}
 
 variable "databricks_host" {
   type    = string
