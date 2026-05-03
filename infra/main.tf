@@ -31,6 +31,7 @@ module "rds" {
 
 module "databricks" {
   source = "./modules/databricks"
+  count  = var.enable_databricks ? 1 : 0
 
   cluster_name = local.cluster_name
 }

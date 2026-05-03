@@ -19,5 +19,16 @@ variable "private_subnets" {
 variable "db_username" {}
 variable "db_password" {}
 
-variable "databricks_host" {}
-variable "databricks_token" {}
+variable "databricks_host" {
+  type    = string
+  default = ""
+}
+
+variable "databricks_token" {
+  type    = string
+  default = ""
+}
+variable "enable_databricks" {
+  type    = bool
+  default = false
+}

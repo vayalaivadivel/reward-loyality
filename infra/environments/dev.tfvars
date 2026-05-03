@@ -11,5 +11,5 @@ private_subnets = ["10.0.10.0/24", "10.0.20.0/24"]
 db_username = "admin"
 db_password = "StrongPassword123!"
 
-databricks_host  = "https://adb-xxxx"
-databricks_token = "xxxx"
+# databricks_host  = "https://adb-xxxx"
+# databricks_token = "xxxx"
