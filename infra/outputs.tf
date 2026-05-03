@@ -3,7 +3,7 @@ output "vpc_id" {
 }
 
 output "rds_endpoint" {
-  value = module.rds.db_endpoint
+  value = module.rds.rds_endpoint
 }
 
 output "bastion_public_ip" {

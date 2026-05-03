@@ -13,7 +13,3 @@ output "public_subnets" {
 output "default_sg_id" {
   value = aws_security_group.default.id
 }
-
-output "db_name" {
-  value = module.rds.db_name
-}
