@@ -17,3 +17,7 @@ output "bastion_public_dns" {
 output "bastion_ssh_command" {
   value = "ssh -i bastion-key.pem ec2-user@${module.bastion.public_ip}"
 }
+
+output "db_name" {
+  value = var.db_name
+}
