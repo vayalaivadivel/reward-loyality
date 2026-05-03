@@ -38,9 +38,23 @@ resource "aws_subnet" "private" {
   }
 }
 
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.project}-eip-${var.env}"
+  }
+}
+
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
+
+  tags = {
+    Name = "${var.project}-nat-${var.env}"
+  }
+
+  depends_on = [aws_internet_gateway.this]
 }
 
 resource "aws_route_table" "public" {
@@ -50,6 +64,12 @@ resource "aws_route_table" "public" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
+}
+resource "aws_route_table_association" "public" {
+  count = length(aws_subnet.public)
+
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table" "private" {
@@ -61,6 +81,12 @@ resource "aws_route_table" "private" {
   }
 }
 
+resource "aws_route_table_association" "private" {
+  count = length(aws_subnet.private)
+
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
 
 resource "aws_security_group" "default" {
   name   = "${var.project}-default-sg-${var.env}"
