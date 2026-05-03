@@ -61,6 +61,8 @@ jobs:
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_wrapper: false
 
     # ---------------- INIT ----------------
     - name: Terraform Init
@@ -79,24 +81,10 @@ jobs:
     # ---------------- PLAN ----------------
     - name: Terraform Plan
       id: plan
-      shell: bash
       run: |
-        set +e
-
         terraform plan \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
           -out=tfplan
-
-        EXIT_CODE=$?
-
-        echo "exitcode=$EXIT_CODE" >> $GITHUB_OUTPUT
-        echo "Terraform exit code: $EXIT_CODE"
-
-        if [ "$EXIT_CODE" -eq 1 ]; then
-          echo "❌ Terraform plan failed"
-          exit 1
-        fi
-
         echo "✅ Terraform plan completed successfully"
 
 
