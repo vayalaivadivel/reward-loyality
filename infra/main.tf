@@ -1,7 +1,11 @@
 module "vpc" {
   source = "./modules/vpc"
 
-  name            = local.vpc_name
+  name = local.vpc_name
+
+  project = var.project # 👈 ADD
+  env     = var.env     # 👈 ADD
+
   vpc_cidr        = var.vpc_cidr
   public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
@@ -43,4 +47,17 @@ module "databricks" {
   count  = var.enable_databricks ? 1 : 0
 
   cluster_name = local.cluster_name
+}
+
+module "bastion" {
+  source = "./modules/ec2"
+
+  name = "bastion-${var.project}-${var.env}"
+
+  ami              = "ami-0f5ee92e2d63afc18"
+  public_subnet_id = module.vpc.public_subnets[0]
+  sg_id            = module.vpc.default_sg_id
+  key_name         = "bastion-key"
+
+  vpc_id = module.vpc.vpc_id # ✅ ADD THIS
 }

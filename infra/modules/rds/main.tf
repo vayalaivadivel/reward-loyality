@@ -15,4 +15,10 @@ resource "aws_db_instance" "mysql" {
   password = var.password
 
   skip_final_snapshot = true
+
+  # 👇 ADD THIS
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
 }
