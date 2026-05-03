@@ -1,4 +1,4 @@
-name: Terraform Manual Deploy
+name: Infra-Setup
 
 on:
   workflow_dispatch:
@@ -7,26 +7,26 @@ on:
         description: "Select environment"
         required: true
         type: choice
-        options:
-          - dev
-          - staging
-          - prod
+        options: [dev, staging, prod]
 
       action:
         description: "Choose action"
         required: true
         type: choice
-        options:
-          - apply
-          - destroy
+        options: [apply, destroy]
 
       confirm_destroy:
-        description: "Type YES to confirm destroy (required for destroy)"
+        description: "Type YES to confirm destroy"
         required: false
 
 permissions:
   id-token: write
   contents: read
+
+# 🚀 Prevent parallel runs (fixes DynamoDB lock issues)
+concurrency:
+  group: terraform-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
   terraform:
@@ -38,13 +38,16 @@ jobs:
       run:
         working-directory: infra
 
+    env:
+      TF_IN_AUTOMATION: true
+
+      # 🔐 Move secrets from tfvars → GitHub Secrets
+      TF_VAR_databricks_host: ${{ secrets.DATABRICKS_HOST }}
+      TF_VAR_databricks_token: ${{ secrets.DATABRICKS_TOKEN }}
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Debug OIDC Token
-      run: |
-        echo "Repository: $GITHUB_REPOSITORY"
-        echo "Ref: $GITHUB_REF"
 
     - name: Configure AWS (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
@@ -58,20 +61,52 @@ jobs:
     # ---------------- INIT ----------------
     - name: Terraform Init
       run: |
-        terraform init \
+        terraform init -upgrade \
           -backend-config="key=reward_loyality/${{ github.event.inputs.environment }}/terraform.tfstate"
 
     # ---------------- VALIDATE ----------------
     - name: Terraform Validate
       run: terraform validate
 
+    # ---------------- FORMAT CHECK ----------------
+    - name: Terraform Format Check
+      run: terraform fmt -check
+
     # ---------------- PLAN ----------------
     - name: Terraform Plan
+      id: plan
       run: |
+        set +e
         terraform plan \
-          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
+          -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
+          -out=tfplan
+        EXIT_CODE=$?
 
-    # ---------------- SAFETY CHECK (DESTROY) ----------------
+        echo "exitcode=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+        if [ $EXIT_CODE -eq 1 ]; then
+          echo "❌ Terraform plan failed"
+          exit 1
+        fi
+
+        if [ $EXIT_CODE -eq 2 ]; then
+          echo "✅ Plan has changes"
+        else
+          echo "✅ No changes"
+        fi
+
+    # ---------------- SHOW PLAN ----------------
+    - name: Show Plan Output
+      run: terraform show -no-color tfplan
+
+    # ---------------- UPLOAD PLAN ----------------
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-${{ github.event.inputs.environment }}
+        path: infra/tfplan
+
+    # ---------------- DESTROY SAFETY ----------------
     - name: Validate Destroy Confirmation
       if: github.event.inputs.action == 'destroy'
       run: |
@@ -84,8 +119,7 @@ jobs:
     - name: Terraform Apply
       if: github.event.inputs.action == 'apply'
       run: |
-        terraform apply -auto-approve \
-          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
+        terraform apply -auto-approve tfplan
 
     # ---------------- DESTROY ----------------
     - name: Terraform Destroy
