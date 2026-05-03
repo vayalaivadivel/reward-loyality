@@ -76,25 +76,22 @@ jobs:
     - name: Terraform Plan
       id: plan
       run: |
-        set +e
         terraform plan \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
-          -out=tfplan
-        EXIT_CODE=$?
+          -out=tfplan || EXIT_CODE=$?
+
+        EXIT_CODE=${EXIT_CODE:-0}
 
         echo "exitcode=$EXIT_CODE" >> $GITHUB_OUTPUT
 
-        if [ $EXIT_CODE -eq 1 ]; then
+        if [ "$EXIT_CODE" -eq 1 ]; then
           echo "❌ Terraform plan failed"
           exit 1
-        fi
-
-        if [ $EXIT_CODE -eq 2 ]; then
-          echo "✅ Plan has changes"
+        elif [ "$EXIT_CODE" -eq 2 ]; then
+          echo "✅ Terraform plan has changes"
         else
-          echo "✅ No changes"
+          echo "✅ No changes detected"
         fi
-
     # ---------------- SHOW PLAN ----------------
     - name: Show Plan Output
       run: terraform show -no-color tfplan
