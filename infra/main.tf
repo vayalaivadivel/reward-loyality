@@ -61,7 +61,7 @@ module "bastion" {
   env     = var.env
   vpc_id  = module.vpc.vpc_id
 
-  key_name = var.key_name   # ✅ IMPORTANT
+  key_name = var.key_name # ✅ IMPORTANT
 
   rds_endpoint = module.rds.rds_endpoint
   db_username  = var.db_username
