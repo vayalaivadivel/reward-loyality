@@ -49,6 +49,27 @@ module "databricks" {
   cluster_name = local.cluster_name
 }
 
+resource "aws_security_group" "bastion_sg" {
+  name   = "${var.project}-bastion-sg-${var.env}"
+  vpc_id = module.vpc.vpc_id
+
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+
+    cidr_blocks = ["0.0.0.0/0"] # TEMP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 module "bastion" {
   source = "./modules/ec2"
 
@@ -56,10 +77,18 @@ module "bastion" {
 
   ami              = "ami-0f5ee92e2d63afc18"
   public_subnet_id = module.vpc.public_subnets[0]
-  sg_id            = module.vpc.default_sg_id
-  key_name         = "bastion-key"
 
-  vpc_id       = module.vpc.vpc_id
+  # ✅ REQUIRED (ADD THESE)
+  project = var.project
+  env     = var.env
+  vpc_id  = module.vpc.vpc_id
+
+  # ✅ FIXED SG
+  sg_id = aws_security_group.bastion_sg.id
+
+  key_name = "bastion-key"
+
+  # DB init
   rds_endpoint = module.rds.rds_endpoint
   db_username  = var.db_username
   db_password  = var.db_password

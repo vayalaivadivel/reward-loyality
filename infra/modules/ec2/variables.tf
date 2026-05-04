@@ -12,3 +12,14 @@ variable "rds_endpoint" {}
 variable "db_username" {}
 variable "db_password" {}
 variable "db_name" {}
+variable "project" {
+  type = string
+}
+
+variable "env" {
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
+}
