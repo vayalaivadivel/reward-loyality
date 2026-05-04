@@ -49,7 +49,6 @@ module "databricks" {
   cluster_name = local.cluster_name
 }
 
-# 🚀 Bastion EC2 (SG is inside module)
 module "bastion" {
   source = "./modules/ec2"
 
@@ -62,9 +61,8 @@ module "bastion" {
   env     = var.env
   vpc_id  = module.vpc.vpc_id
 
-  key_name = "bastion-key"
+  key_name = var.key_name   # ✅ IMPORTANT
 
-  # DB init
   rds_endpoint = module.rds.rds_endpoint
   db_username  = var.db_username
   db_password  = var.db_password

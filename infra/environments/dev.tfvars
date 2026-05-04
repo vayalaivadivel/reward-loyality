@@ -11,5 +11,6 @@ private_subnets = ["10.0.10.0/24",  "10.0.20.0/24"]
 db_username = "admin"
 db_password = "StrongPassword123!"
 db_name = "rldb"
+key_name = "bastion-key"
 # databricks_host  = "https://adb-xxxx"
 # databricks_token = "xxxx"

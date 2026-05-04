@@ -7,7 +7,9 @@ resource "aws_instance" "bastion" {
 
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
   key_name               = var.key_name
+
   user_data = file("${path.module}/user_data.sh")
+
   tags = {
     Name = var.name
   }
