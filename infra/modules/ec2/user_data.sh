@@ -1,20 +1,23 @@
 #!/bin/bash
 
 # Update system
-yum update -y
+apt-get update -y
 
 # Install MySQL client
-yum install -y mysql
+apt-get install -y mysql-client
 
-# Wait for RDS to be ready (simple retry)
+# Wait for RDS to be ready
 sleep 60
 
 # Create SQL file
-cat <<EOF > /home/ec2-user/init.sql
+cat <<EOF > /home/ubuntu/init.sql
 ${init_sql}
 EOF
 
-# Run SQL
-mysql -h ${rds_host} -u ${db_user} -p${db_password} ${db_name} < /home/ec2-user/init.sql
+# Set permissions
+chown ubuntu:ubuntu /home/ubuntu/init.sql
 
-echo "DB initialized" > /home/ec2-user/db_init.log
+# Run SQL
+mysql -h ${rds_host} -u ${db_user} -p${db_password} ${db_name} < /home/ubuntu/init.sql
+
+echo "DB initialized" > /home/ubuntu/db_init.log
