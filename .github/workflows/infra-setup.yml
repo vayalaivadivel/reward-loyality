@@ -93,7 +93,11 @@ jobs:
     # ---------------- APPLY ----------------
     - name: Terraform Apply
       if: github.event.inputs.action == 'apply'
-      run: terraform apply -auto-approve tfplan
+      run: |
+        terraform apply -auto-approve \
+          -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
+          -replace="module.bastion.aws_instance.bastion"
+
 
     # ---------------- DESTROY ----------------
     - name: Block Prod Destroy
