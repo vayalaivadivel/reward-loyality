@@ -1,23 +1,37 @@
 #!/bin/bash
 
-# Update system
+set -e
+
+# Log everything
+exec > /home/ubuntu/user-data.log 2>&1
+
+echo "Starting setup..."
+
+# Update
 apt-get update -y
 
 # Install MySQL client
 apt-get install -y mysql-client
 
-# Wait for RDS to be ready
-sleep 60
+echo "MySQL client installed"
+
+# Wait for RDS
+until mysql -h ${rds_host} -u ${db_user} -p${db_password} -e "SELECT 1"; do
+  echo "Waiting for RDS..."
+  sleep 10
+done
+
+echo "RDS is ready"
 
 # Create SQL file
 cat <<EOF > /home/ubuntu/init.sql
 ${init_sql}
 EOF
 
-# Set permissions
 chown ubuntu:ubuntu /home/ubuntu/init.sql
 
-# Run SQL
+echo "Running SQL..."
+
 mysql -h ${rds_host} -u ${db_user} -p${db_password} ${db_name} < /home/ubuntu/init.sql
 
-echo "DB initialized" > /home/ubuntu/db_init.log
+echo "DB initialized successfully" > /home/ubuntu/db_init.log
