@@ -32,22 +32,17 @@ module "iam" {
   role_name = local.iam_role_name
 }
 
-module "rds" {
-  source = "./modules/rds"
+resource "aws_security_group_rule" "bastion_to_rds" {
+  type      = "ingress"
+  from_port = 3306
+  to_port   = 3306
+  protocol  = "tcp"
 
-  name            = local.rds_name
-  db_name         = local.db_name
-  username        = var.db_username
-  password        = var.db_password
-  private_subnets = module.vpc.private_subnets
+  security_group_id        = module.rds.rds_sg_id
+  source_security_group_id = module.bastion.sg_id
 }
 
-module "databricks" {
-  source = "./modules/databricks"
-  count  = var.enable_databricks ? 1 : 0
 
-  cluster_name = local.cluster_name
-}
 
 module "bastion" {
   source = "./modules/ec2"
@@ -67,4 +62,24 @@ module "bastion" {
   db_username  = var.db_username
   db_password  = var.db_password
   db_name      = local.db_name
+}
+
+module "databricks" {
+  source = "./modules/databricks"
+  count  = var.enable_databricks ? 1 : 0
+
+  cluster_name = local.cluster_name
+}
+
+
+module "rds" {
+  source = "./modules/rds"
+
+  name            = local.rds_name
+  db_name         = local.db_name
+  username        = var.db_username
+  password        = var.db_password
+  private_subnets = module.vpc.private_subnets
+
+  vpc_id = module.vpc.vpc_id
 }

@@ -15,10 +15,21 @@ resource "aws_db_instance" "mysql" {
   password = var.password
 
   skip_final_snapshot = true
-
-  # 👇 ADD THIS
+  
   timeouts {
     create = "30m"
     delete = "30m"
+  }
+}
+
+resource "aws_security_group" "rds" {
+  name   = "${var.name}-rds-sg"
+  vpc_id = var.vpc_id
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
