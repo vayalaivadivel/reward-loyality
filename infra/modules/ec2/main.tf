@@ -8,7 +8,13 @@ resource "aws_instance" "bastion" {
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
   key_name               = var.key_name
 
-  user_data = file("${path.module}/user_data.sh")
+  user_data = templatefile("${path.module}/user_data.sh", {
+  rds_host    = var.rds_endpoint
+  db_user     = var.db_username
+  db_password = var.db_password
+  db_name     = var.db_name
+  init_sql    = file("${path.module}/init.sql")
+})
 
   tags = {
     Name = var.name
