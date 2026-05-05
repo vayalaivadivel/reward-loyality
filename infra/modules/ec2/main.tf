@@ -9,12 +9,12 @@ resource "aws_instance" "bastion" {
   key_name               = var.key_name
 
   user_data = templatefile("${path.module}/user_data.sh", {
-  rds_host    = var.rds_endpoint
-  db_user     = var.db_username
-  db_password = var.db_password
-  db_name     = var.db_name
+    rds_host    = split(":", var.rds_endpoint)[0]
+    db_user     = var.db_username
+    db_password = var.db_password
+    db_name     = var.db_name
   init_sql    = file("${path.module}/init.sql")
-})
+  })
 
   tags = {
     Name = var.name
