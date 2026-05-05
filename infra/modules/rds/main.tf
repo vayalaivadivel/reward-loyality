@@ -20,6 +20,7 @@ resource "aws_db_instance" "mysql" {
     create = "30m"
     delete = "30m"
   }
+  vpc_security_group_ids = [aws_security_group.rds.id]
 }
 
 resource "aws_security_group" "rds" {
