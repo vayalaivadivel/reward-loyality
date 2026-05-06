@@ -55,3 +55,5 @@ variable "db_name" {
   description = "Database name"
   type        = string
 }
+
+variable "instance_profile_name" {}

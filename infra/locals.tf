@@ -9,9 +9,9 @@ locals {
   cluster_name  = "cluster_${local.name_suffix}"
 
   # 🪣 Data lake buckets (Bronze / Silver / Gold) 
-  bronze_bucket = "${var.project}-bronze-${var.env}"
-  silver_bucket = "${var.project}-silver-${var.env}"
-  gold_bucket   = "${var.project}-gold-${var.env}"
+  raw_bucket        = "${var.project}-raw-${var.env}"
+  replicated_bucket = "${var.project}-replicated-${var.env}"
+  unified_bucket    = "${var.project}-unified-${var.env}"
 
 
 }

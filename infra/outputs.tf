@@ -25,3 +25,15 @@ output "db_name" {
 variable "ssh_user" {
   default = "ubuntu"
 }
+
+output "raw_bucket" {
+  value = module.s3_raw.bucket_name
+}
+
+output "replicated_bucket" {
+  value = module.s3_replicated.bucket_name
+}
+
+output "unified_bucket" {
+  value = module.s3_unified.bucket_name
+}

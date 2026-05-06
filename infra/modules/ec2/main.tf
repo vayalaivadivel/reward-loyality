@@ -19,4 +19,5 @@ resource "aws_instance" "bastion" {
   tags = {
     Name = var.name
   }
+  iam_instance_profile = var.instance_profile_name
 }

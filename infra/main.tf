@@ -56,19 +56,19 @@ resource "aws_security_group_rule" "bastion_to_rds" {
 }
 
 # Other modules (unchanged)
-module "s3_bronze" {
+module "s3_raw" {
   source      = "./modules/s3"
-  bucket_name = local.bronze_bucket
+  bucket_name = local.raw_bucket
 }
 
-module "s3_silver" {
+module "s3_replicated" {
   source      = "./modules/s3"
-  bucket_name = local.silver_bucket
+  bucket_name = local.replicated_bucket
 }
 
-module "s3_gold" {
+module "s3_unified" {
   source      = "./modules/s3"
-  bucket_name = local.gold_bucket
+  bucket_name = local.unified_bucket
 }
 
 module "iam" {
