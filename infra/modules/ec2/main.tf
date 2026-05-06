@@ -13,7 +13,7 @@ resource "aws_instance" "bastion" {
     db_user     = var.db_username
     db_password = var.db_password
     db_name     = var.db_name
-  init_sql    = file("${path.module}/init.sql")
+    init_sql_b64 = base64encode(file("${path.module}/init.sql"))
   })
 
   tags = {
