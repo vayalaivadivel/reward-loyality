@@ -37,20 +37,17 @@ resource "aws_dms_endpoint" "s3_target" {
   engine_name = "s3"
 
   s3_settings {
-
-    bucket_name = var.raw_bucket
-
-    bucket_folder = "mysql-cdc/"
-
-    compression_type = "GZIP"
-
+    bucket_name             = var.raw_bucket
+    cdc_inserts_only        = false
+    bucket_folder           = "mysql-cdc/"
+    compression_type        = "GZIP"
     service_access_role_arn = var.dms_role_arn
   }
 }
 
 resource "aws_dms_replication_task" "mysql_cdc_task" {
 
-  replication_task_id = "mysql-cdc-task"
+  replication_task_id = "${var.env}-mysql-cdc-task"
 
   migration_type = "full-load-and-cdc"
 
@@ -106,20 +103,74 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
       LimitedSizeLobMode = true
 
       LobMaxSize = 32
+
+      ParallelLoadThreads = 0
     }
 
     FullLoadSettings = {
 
       TargetTablePrepMode = "DO_NOTHING"
 
+      CreatePkAfterFullLoad = false
+
       StopTaskCachedChangesApplied = false
 
       StopTaskCachedChangesNotApplied = false
+
+      MaxFullLoadSubTasks = 8
     }
 
     Logging = {
 
       EnableLogging = true
     }
+
+    ControlTablesSettings = {
+
+      ControlSchema = ""
+
+      HistoryTimeslotInMinutes = 5
+
+      HistoryTableEnabled = false
+
+      SuspendedTablesTableEnabled = false
+
+      StatusTableEnabled = false
+
+      FullLoadExceptionTableEnabled = false
+    }
+
+    StreamBufferSettings = {
+
+      StreamBufferCount = 3
+
+      StreamBufferSizeInMB = 8
+    }
+
+    ChangeProcessingDdlHandlingPolicy = {
+
+      HandleSourceTableDropped = true
+
+      HandleSourceTableTruncated = true
+
+      HandleSourceTableAltered = true
+    }
+
+    ErrorBehavior = {
+
+      DataErrorPolicy = "LOG_ERROR"
+
+      DataTruncationErrorPolicy = "LOG_ERROR"
+
+      TableErrorPolicy = "SUSPEND_TABLE"
+
+      DataErrorEscalationPolicy = "SUSPEND_TABLE"
+    }
   })
+
+  depends_on = [
+    aws_dms_endpoint.mysql_source,
+    aws_dms_endpoint.s3_target,
+    aws_dms_replication_instance.dms_instance
+  ]
 }
