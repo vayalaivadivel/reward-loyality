@@ -78,7 +78,7 @@ resource "aws_db_parameter_group" "mysql_cdc_pg" {
   #################################
 
   parameter {
-    name  = "binlog_retention_hours"
+    name  = "binlog retention hours"
     value = "24"
   }
 
