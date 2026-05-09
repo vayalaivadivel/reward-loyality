@@ -96,14 +96,15 @@ module "eventbridge" {
 }
 
 module "dms" {
-  source         = "./modules/dms"
-  env            = var.env
-  mysql_host     = module.rds.rds_endpoint
-  mysql_user     = var.db_username
-  mysql_password = var.db_password
-  mysql_database = local.db_name
-  raw_db_name    = local.raw_db_name
-  dms_role_arn   = module.iam.dms_role_arn
+  source                  = "./modules/dms"
+  env                     = var.env
+  mysql_host              = module.rds.rds_endpoint
+  mysql_user              = var.db_username
+  mysql_password          = var.db_password
+  mysql_database          = local.db_name
+  raw_db_name             = local.raw_db_name
+  dms_role_arn            = module.iam.dms_role_arn
+  dms_vpc_role_dependency = module.iam.dms_vpc_role_ready
 }
 
 module "iam" {

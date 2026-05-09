@@ -2,11 +2,15 @@ resource "aws_dms_replication_instance" "dms_instance" {
 
   replication_instance_id = "mysql-dms-instance"
 
-  replication_instance_class = "dms.t3.medium"
+  replication_instance_class = "dms.t3.micro"
 
-  allocated_storage = 100
+  allocated_storage = 20
 
   publicly_accessible = false
+
+  depends_on = [
+    var.dms_vpc_role_dependency
+  ]
 }
 
 resource "aws_dms_endpoint" "mysql_source" {

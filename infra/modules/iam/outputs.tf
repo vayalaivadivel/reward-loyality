@@ -13,3 +13,7 @@ output "dms_role_arn" {
 output "instance_profile_name" {
   value = aws_iam_instance_profile.this.name
 }
+output "dms_vpc_role_ready" {
+
+  value = aws_iam_role_policy_attachment.dms_vpc_attach.id
+}
