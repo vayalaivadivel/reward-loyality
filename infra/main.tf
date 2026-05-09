@@ -84,7 +84,7 @@ module "lambda" {
   source          = "./modules/lambda"
   env             = var.env
   lambda_role_arn = module.iam.lambda_role_arn
-  hop_url         = var.hop_url
+  hop_url         = "http://${module.ec2.public_ip}:8080/hop/runWorkflow"
   hop_username    = var.hop_username
   hop_password    = var.hop_password
 }

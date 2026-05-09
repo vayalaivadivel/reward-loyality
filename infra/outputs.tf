@@ -25,3 +25,7 @@ output "db_name" {
 variable "ssh_user" {
   default = "ubuntu"
 }
+
+output "hop_url" {
+  value = "http://${module.ec2.public_ip}:8080/hop/runWorkflow"
+}
