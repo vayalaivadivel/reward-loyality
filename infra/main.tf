@@ -129,3 +129,16 @@ module "dms" {
   raw_bucket     = module.s3_raw.bucket_name
   dms_role_arn   = module.iam.dms_role_arn
 }
+
+#########################################
+# RANDOM SUFFIX FOR UNIQUE S3 BUCKETS
+#########################################
+
+resource "random_string" "suffix" {
+
+  length = 5
+
+  special = false
+
+  upper = false
+}
