@@ -37,14 +37,20 @@ resource "aws_dms_endpoint" "s3_target" {
   engine_name = "s3"
 
   s3_settings {
-    bucket_name             = var.raw_bucket
-    cdc_inserts_only        = false
-    bucket_folder           = "mysql-cdc/"
-    compression_type        = "GZIP"
+
+    bucket_name = var.raw_bucket
+
+    bucket_folder = "mysql-cdc/"
+
+    compression_type = "GZIP"
+
     service_access_role_arn = var.dms_role_arn
+
+    cdc_inserts_only = false
+
+    timestamp_column_name = "dms_timestamp"
   }
 }
-
 resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   replication_task_id = "${var.env}-mysql-cdc-task"
