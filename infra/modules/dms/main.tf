@@ -2,7 +2,7 @@ resource "aws_dms_replication_instance" "dms_instance" {
 
   replication_instance_id = "mysql-dms-instance"
 
-  replication_instance_class = "dms.t3.micro"
+  replication_instance_class = "dms.t3.small"
 
   allocated_storage = 20
 
