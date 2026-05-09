@@ -1,19 +1,25 @@
+#########################################
+# CREATE ZIP FROM PYTHON FILE
+#########################################
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/trigger_hop.py"
+  output_path = "${path.module}/lambda/function.zip"
+}
+
+#########################################
+# LAMBDA FUNCTION
+#########################################
+
 resource "aws_lambda_function" "hop_trigger" {
-
-  function_name = "hop-workflow-trigger"
-
-  filename = "${path.module}/lambda/function.zip"
-
-  source_code_hash = filebase64sha256(
-    "${path.module}/lambda/function.zip"
-  )
-
-  role    = var.lambda_role_arn
-  handler = "trigger_hop.lambda_handler"
-  runtime = "python3.11"
-
-  timeout = 60
-
+  function_name    = "${var.env}-hop-workflow-trigger"
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  role             = var.lambda_role_arn
+  handler          = "trigger_hop.lambda_handler"
+  runtime          = "python3.11"
+  timeout          = 60
   environment {
     variables = {
       HOP_URL      = var.hop_url

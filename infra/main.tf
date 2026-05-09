@@ -105,24 +105,17 @@ module "databricks" {
 
 
 module "lambda" {
-
-  source = "./modules/lambda"
-
+  source          = "./modules/lambda"
+  env             = var.env
   lambda_role_arn = module.iam.lambda_role_arn
-
-  hop_url = var.hop_url
-
-  hop_username = var.hop_username
-
-  hop_password = var.hop_password
+  hop_url         = var.hop_url
+  hop_username    = var.hop_username
+  hop_password    = var.hop_password
 }
 
 module "eventbridge" {
-
-  source = "./modules/eventbridge"
-
-  lambda_arn = module.lambda.lambda_arn
-
+  source      = "./modules/eventbridge"
+  lambda_arn  = module.lambda.lambda_arn
   lambda_name = module.lambda.lambda_name
 }
 
