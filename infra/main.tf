@@ -72,30 +72,6 @@ resource "aws_security_group_rule" "bastion_to_rds" {
   source_security_group_id = module.ec2.sg_id
 }
 
-# Other modules (unchanged)
-module "s3_raw" {
-  source      = "./modules/s3"
-  bucket_name = local.raw_bucket
-}
-
-module "s3_replicated" {
-  source      = "./modules/s3"
-  bucket_name = local.replicated_bucket
-}
-
-module "s3_unified" {
-  source      = "./modules/s3"
-  bucket_name = local.unified_bucket
-}
-
-module "iam" {
-  source     = "./modules/iam"
-  project    = var.project
-  env        = var.env
-  role_name  = "${var.project}-${var.env}-role"
-  raw_bucket = module.s3_raw.bucket_name
-}
-
 module "databricks" {
   source = "./modules/databricks"
   count  = var.enable_databricks ? 1 : 0
@@ -123,22 +99,16 @@ module "dms" {
   source         = "./modules/dms"
   env            = var.env
   mysql_host     = module.rds.rds_endpoint
-  mysql_user     = var.mysql_user
-  mysql_password = var.mysql_password
-  mysql_database = var.mysql_database
-  raw_bucket     = module.s3_raw.bucket_name
+  mysql_user     = var.db_username
+  mysql_password = var.db_password
+  mysql_database = local.db_name
+  raw_db_name    = local.raw_db_name
   dms_role_arn   = module.iam.dms_role_arn
 }
 
-#########################################
-# RANDOM SUFFIX FOR UNIQUE S3 BUCKETS
-#########################################
-
-resource "random_string" "suffix" {
-
-  length = 5
-
-  special = false
-
-  upper = false
+module "iam" {
+  source    = "./modules/iam"
+  project   = var.project
+  env       = var.env
+  role_name = "${var.project}-${var.env}-role"
 }

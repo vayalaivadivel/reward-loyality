@@ -28,28 +28,24 @@ resource "aws_dms_endpoint" "mysql_source" {
   database_name = var.mysql_database
 }
 
-resource "aws_dms_endpoint" "s3_target" {
+resource "aws_dms_endpoint" "mysql_target" {
 
-  endpoint_id = "${var.env}-raw-s3-target"
+  endpoint_id = "${var.env}-mysql-target"
 
   endpoint_type = "target"
 
-  engine_name = "s3"
+  engine_name = "mysql"
 
-  s3_settings {
+  server_name = var.mysql_host
 
-    bucket_name = var.raw_bucket
+  port     = 3306
+  username = var.mysql_user
 
-    bucket_folder = "mysql-cdc/"
+  password = var.mysql_password
 
-    compression_type = "GZIP"
+  database_name = var.raw_db_name
 
-    service_access_role_arn = var.dms_role_arn
-
-    cdc_inserts_only = false
-
-    timestamp_column_name = "dms_timestamp"
-  }
+  ssl_mode = "none"
 }
 
 resource "aws_dms_replication_task" "mysql_cdc_task" {
@@ -62,7 +58,7 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   source_endpoint_arn = aws_dms_endpoint.mysql_source.endpoint_arn
 
-  target_endpoint_arn = aws_dms_endpoint.s3_target.endpoint_arn
+  target_endpoint_arn = aws_dms_endpoint.mysql_target.endpoint_arn
 
   #########################################
   # TABLE MAPPINGS
@@ -110,7 +106,7 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   depends_on = [
     aws_dms_endpoint.mysql_source,
-    aws_dms_endpoint.s3_target,
+    aws_dms_endpoint.mysql_target,
     aws_dms_replication_instance.dms_instance
   ]
 }
