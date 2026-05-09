@@ -60,18 +60,66 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   target_endpoint_arn = aws_dms_endpoint.s3_target.endpoint_arn
 
+  #########################################
+  # TABLE MAPPINGS
+  #########################################
+
   table_mappings = jsonencode({
-    rules = [{
-      "rule-type" = "selection",
-      "rule-id"   = "1",
-      "rule-name" = "1",
 
-      "object-locator" = {
-        "schema-name" = "%",
-        "table-name"  = "%"
-      },
+    rules = [
 
-      "rule-action" = "include"
-    }]
+      {
+        "rule-type" = "selection"
+
+        "rule-id" = "1"
+
+        "rule-name" = "1"
+
+        "object-locator" = {
+
+          "schema-name" = "%"
+
+          "table-name" = "%"
+        }
+
+        "rule-action" = "include"
+      }
+    ]
   })
-}   
+
+  #########################################
+  # TASK SETTINGS
+  #########################################
+
+  replication_task_settings = jsonencode({
+
+    TargetMetadata = {
+
+      TargetSchema = ""
+
+      SupportLobs = true
+
+      FullLobMode = false
+
+      LobChunkSize = 64
+
+      LimitedSizeLobMode = true
+
+      LobMaxSize = 32
+    }
+
+    FullLoadSettings = {
+
+      TargetTablePrepMode = "DO_NOTHING"
+
+      StopTaskCachedChangesApplied = false
+
+      StopTaskCachedChangesNotApplied = false
+    }
+
+    Logging = {
+
+      EnableLogging = true
+    }
+  })
+}
