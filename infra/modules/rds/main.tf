@@ -72,16 +72,6 @@ resource "aws_db_parameter_group" "mysql_cdc_pg" {
     name  = "log_bin_trust_function_creators"
     value = "1"
   }
-
-  #################################
-  # OPTIONAL BUT RECOMMENDED
-  #################################
-
-  parameter {
-    name  = "binlog retention hours"
-    value = "24"
-  }
-
   tags = {
     Name = "${var.name}-mysql-cdc-pg"
   }
