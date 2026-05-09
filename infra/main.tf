@@ -24,24 +24,41 @@ module "rds" {
 }
 
 # ✅ BASTION AFTER RDS
-module "bastion" {
+module "ec2" {
+
   source = "./modules/ec2"
 
   name = "bastion-${var.project}-${var.env}"
 
-  ami              = "ami-0f5ee92e2d63afc18"
+  ami = "ami-0f5ee92e2d63afc18"
+
   public_subnet_id = module.vpc.public_subnets[0]
 
   project = var.project
-  env     = var.env
-  vpc_id  = module.vpc.vpc_id
+
+  env = var.env
+
+  vpc_id = module.vpc.vpc_id
 
   key_name = var.key_name
 
+  #################################
+  # ADD THIS
+  #################################
+
+  instance_profile_name = module.iam.instance_profile_name
+
+  #################################
+  # RDS
+  #################################
+
   rds_endpoint = module.rds.rds_endpoint
-  db_username  = var.db_username
-  db_password  = var.db_password
-  db_name      = local.db_name
+
+  db_username = var.db_username
+
+  db_password = var.db_password
+
+  db_name = local.db_name
 }
 
 # ✅ SG RULE AFTER BOTH MODULES
@@ -72,8 +89,11 @@ module "s3_unified" {
 }
 
 module "iam" {
-  source    = "./modules/iam"
-  role_name = local.iam_role_name
+  source     = "./modules/iam"
+  project    = var.project
+  env        = var.env
+  role_name  = "${var.project}-${var.env}-role"
+  raw_bucket = module.s3_raw.bucket_name
 }
 
 module "databricks" {
@@ -81,4 +101,44 @@ module "databricks" {
   count  = var.enable_databricks ? 1 : 0
 
   cluster_name = local.cluster_name
+}
+
+
+module "lambda" {
+
+  source = "./modules/lambda"
+
+  lambda_role_arn = module.iam.lambda_role_arn
+
+  hop_url = var.hop_url
+
+  hop_username = var.hop_username
+
+  hop_password = var.hop_password
+}
+
+module "eventbridge" {
+
+  source = "./modules/eventbridge"
+
+  lambda_arn = module.lambda.lambda_arn
+
+  lambda_name = module.lambda.lambda_name
+}
+
+module "dms" {
+
+  source = "./modules/dms"
+
+  mysql_host = module.rds.rds_endpoint
+
+  mysql_user = var.mysql_user
+
+  mysql_password = var.mysql_password
+
+  mysql_database = var.mysql_database
+
+  bronze_bucket = module.s3.bronze_bucket_name
+
+  dms_role_arn = module.iam.dms_role_arn
 }

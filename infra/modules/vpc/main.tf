@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
 
   vpc_id            = aws_vpc.this.id
   cidr_block        = var.public_subnets[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]  # 👈 ADD THIS
+  availability_zone = data.aws_availability_zones.available.names[count.index] # 👈 ADD THIS
 
   map_public_ip_on_launch = true
 
@@ -31,7 +31,7 @@ resource "aws_subnet" "private" {
 
   vpc_id            = aws_vpc.this.id
   cidr_block        = var.private_subnets[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]  # 👈 ADD THIS
+  availability_zone = data.aws_availability_zones.available.names[count.index] # 👈 ADD THIS
 
   tags = {
     Name = "${var.project}-pvt-${count.index}-${var.env}"
@@ -91,10 +91,10 @@ resource "aws_security_group" "default" {
   vpc_id = aws_vpc.this.id
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
   }
 
   egress {

@@ -38,3 +38,11 @@ variable "key_name" {
   description = "EC2 key pair name"
   type        = string
 }
+
+variable "hop_url" {}
+variable "hop_username" {}
+variable "hop_password" {}
+
+variable "mysql_user" {}
+variable "mysql_password" {}
+variable "mysql_database" {}
