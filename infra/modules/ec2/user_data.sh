@@ -75,4 +75,31 @@ else
   exit 1
 fi
 
+
+#########################################
+# INSTALL APACHE HOP SERVER
+#########################################
+
+echo "Installing Apache Hop Server..."
+
+apt-get install -y openjdk-17-jdk wget unzip
+
+mkdir -p /opt/hop
+
+cd /opt/hop
+
+wget https://downloads.apache.org/hop/2.15.0/apache-hop-client-2.15.0.zip
+
+unzip apache-hop-client-2.15.0.zip
+
+cd hop
+
+nohup ./hop-server.sh \
+  -u admin \
+  -p admin \
+  8080 > /var/log/hop-server.log 2>&1 &
+
+echo "✅ Apache Hop Server Started"
+
+
 echo "===== USER DATA SCRIPT COMPLETED SUCCESSFULLY ====="
