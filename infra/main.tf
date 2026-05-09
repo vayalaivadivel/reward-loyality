@@ -121,7 +121,7 @@ module "eventbridge" {
 
 module "dms" {
   source         = "./modules/dms"
-  environment    = var.env
+  env            = var.env
   mysql_host     = module.rds.rds_endpoint
   mysql_user     = var.mysql_user
   mysql_password = var.mysql_password
