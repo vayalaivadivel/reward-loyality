@@ -30,11 +30,16 @@ resource "aws_dms_endpoint" "mysql_source" {
 
 resource "aws_dms_endpoint" "s3_target" {
 
-  endpoint_id         = "${var.environment}-raw-s3-target"
-  endpoint_type       = "target"
-  engine_name         = "s3"
+  endpoint_id = "${var.env}-raw-s3-target"
+
+  endpoint_type = "target"
+
+  engine_name = "s3"
+
   service_access_role = var.dms_role_arn
-  extra_connection_attributes = join(";",
+
+  extra_connection_attributes = join(
+    ";",
     [
       "bucketName=${var.raw_bucket}",
       "bucketFolder=mysql-cdc/",
