@@ -36,16 +36,16 @@ resource "aws_dms_endpoint" "s3_target" {
 
   engine_name = "s3"
 
-  service_access_role = var.dms_role_arn
+  s3_settings {
 
-  extra_connection_attributes = join(
-    ";",
-    [
-      "bucketName=${var.raw_bucket}",
-      "bucketFolder=mysql-cdc/",
-      "compressionType=GZIP"
-    ]
-  )
+    bucket_name = var.raw_bucket
+
+    bucket_folder = "mysql-cdc/"
+
+    compression_type = "GZIP"
+
+    service_access_role_arn = var.dms_role_arn
+  }
 }
 
 resource "aws_dms_replication_task" "mysql_cdc_task" {
