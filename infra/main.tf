@@ -69,7 +69,7 @@ resource "aws_security_group_rule" "bastion_to_rds" {
   protocol  = "tcp"
 
   security_group_id        = module.rds.rds_sg_id
-  source_security_group_id = module.bastion.sg_id
+  source_security_group_id = module.ec2.sg_id
 }
 
 # Other modules (unchanged)
@@ -127,18 +127,11 @@ module "eventbridge" {
 }
 
 module "dms" {
-
-  source = "./modules/dms"
-
-  mysql_host = module.rds.rds_endpoint
-
-  mysql_user = var.mysql_user
-
+  source         = "./modules/dms"
+  mysql_host     = module.rds.rds_endpoint
+  mysql_user     = var.mysql_user
   mysql_password = var.mysql_password
-
   mysql_database = var.mysql_database
-
-  bronze_bucket = module.s3.bronze_bucket_name
-
-  dms_role_arn = module.iam.dms_role_arn
+  raw_bucket     = module.s3_raw.bucket_name
+  dms_role_arn   = module.iam.dms_role_arn
 }
