@@ -19,14 +19,18 @@ echo "Updating system packages..."
 apt-get update -y
 
 #########################################
-# INSTALL MYSQL CLIENT
+# INSTALL MYSQL + JAVA + UTILITIES
 #########################################
 
-echo "Installing MySQL client..."
+echo "Installing required packages..."
 
-apt-get install -y mysql-client || \
-apt-get install -y default-mysql-client || \
-apt-get install -y mysql-client-core-8.0
+apt-get install -y \
+  mysql-client \
+  default-mysql-client \
+  openjdk-17-jdk \
+  wget \
+  unzip \
+  nginx || true
 
 #########################################
 # VERIFY MYSQL CLIENT
@@ -95,8 +99,6 @@ chmod 600 /home/ubuntu/init.sql
 
 echo "✅ SQL file created"
 
-ls -l /home/ubuntu/init.sql
-
 #########################################
 # EXECUTE SQL
 #########################################
@@ -125,17 +127,6 @@ else
 
   exit 1
 fi
-
-#########################################
-# INSTALL JAVA + UTILITIES
-#########################################
-
-echo "Installing Java and utilities..."
-
-apt-get install -y \
-  openjdk-17-jdk \
-  wget \
-  unzip
 
 #########################################
 # CREATE HOP DIRECTORY
@@ -189,27 +180,10 @@ fi
 echo "✅ Apache Hop extracted successfully"
 
 #########################################
-# CONFIGURE HOP SERVER
+# FIX PERMISSIONS
 #########################################
 
-cd /opt/hop/hop
-
-echo "Configuring Apache Hop server..."
-
-if [ -f config/hop-server-config.xml ]; then
-
-  sed -i \
-  's/<hostname>localhost<\/hostname>/<hostname>0.0.0.0<\/hostname>/g' \
-  config/hop-server-config.xml
-
-  echo "✅ Hop hostname updated"
-
-else
-
-  echo "❌ hop-server-config.xml not found"
-
-  exit 1
-fi
+chown -R ubuntu:ubuntu /opt/hop
 
 #########################################
 # START HOP SERVER
@@ -217,30 +191,29 @@ fi
 
 echo "Starting Apache Hop server..."
 
-chmod +x hop-server.sh
+chmod +x /opt/hop/hop/hop-server.sh
 
-nohup ./hop-server.sh \
-  > /var/log/hop-server.log 2>&1 &
+sudo bash -c 'nohup /opt/hop/hop/hop-server.sh > /var/log/hop-server.log 2>&1 &'
 
 #########################################
-# WAIT FOR SERVER
+# WAIT FOR HOP INTERNAL PORT
 #########################################
+
+echo "Waiting for Hop internal port..."
 
 sleep 30
 
 #########################################
-# VERIFY HOP SERVER
+# VERIFY HOP INTERNAL SERVER
 #########################################
 
 if ss -tulnp | grep 8080 >/dev/null 2>&1; then
 
-    echo "✅ Apache Hop Server Started Successfully"
+    echo "✅ Apache Hop internal server started"
 
 else
 
-    echo "❌ Apache Hop Server Failed To Start"
-
-    echo "===== HOP SERVER LOG ====="
+    echo "❌ Apache Hop failed to start"
 
     cat /var/log/hop-server.log || true
 
@@ -248,10 +221,78 @@ else
 fi
 
 #########################################
-# DISPLAY LISTENING PORT
+# CONFIGURE NGINX REVERSE PROXY
 #########################################
 
-sudo ss -tulnp | grep 8080 || true
+echo "Configuring NGINX reverse proxy..."
+
+cat <<EOF > /etc/nginx/sites-available/hop
+server {
+
+    listen 8081;
+
+    location / {
+
+        proxy_pass http://127.0.0.1:8080;
+
+        proxy_set_header Host \$host;
+
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+EOF
+
+#########################################
+# ENABLE NGINX CONFIG
+#########################################
+
+ln -sf /etc/nginx/sites-available/hop \
+/etc/nginx/sites-enabled/hop
+
+#########################################
+# REMOVE DEFAULT SITE
+#########################################
+
+rm -f /etc/nginx/sites-enabled/default
+
+#########################################
+# VALIDATE NGINX CONFIG
+#########################################
+
+nginx -t
+
+#########################################
+# RESTART NGINX
+#########################################
+
+systemctl restart nginx
+
+systemctl enable nginx
+
+#########################################
+# VERIFY NGINX
+#########################################
+
+sleep 10
+
+if ss -tulnp | grep 8081 >/dev/null 2>&1; then
+
+    echo "✅ NGINX reverse proxy started successfully"
+
+else
+
+    echo "❌ NGINX failed to start"
+
+    exit 1
+fi
+
+#########################################
+# DISPLAY PORTS
+#########################################
+
+echo "===== ACTIVE PORTS ====="
+
+sudo ss -tulnp | grep 808 || true
 
 #########################################
 # COMPLETE
