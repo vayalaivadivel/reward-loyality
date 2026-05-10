@@ -105,6 +105,8 @@ module "dms" {
   raw_db_name             = local.raw_db_name
   dms_role_arn            = module.iam.dms_role_arn
   dms_vpc_role_dependency = module.iam.dms_vpc_role_ready
+  security_group_id       = module.ec2.sg_id
+  private_subnets         = module.vpc.private_subnets
 }
 
 module "iam" {
