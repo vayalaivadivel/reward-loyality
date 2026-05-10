@@ -57,3 +57,37 @@ variable "db_name" {
 }
 
 variable "instance_profile_name" {}
+variable "private_key_path" {
+  type = string
+}
+
+
+resource "null_resource" "wait_for_hop" {
+
+  depends_on = [
+    aws_instance.bastion
+  ]
+
+  connection {
+
+    type = "ssh"
+
+    host = aws_instance.bastion.public_ip
+
+    user = "ubuntu"
+
+    private_key = file(var.private_key_path)
+  }
+
+  provisioner "remote-exec" {
+
+    inline = [
+
+      "echo 'Waiting for Apache Hop to start...'",
+
+      "until sudo ss -tulnp | grep 8080; do sleep 15; done",
+
+      "echo 'Apache Hop is running!'"
+    ]
+  }
+}

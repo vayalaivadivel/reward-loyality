@@ -3,17 +3,23 @@ name: Infra-Setup
 on:
   workflow_dispatch:
     inputs:
+
       environment:
         description: "Select environment"
         required: true
         type: choice
-        options: [dev, staging, prod]
+        options:
+          - dev
+          - staging
+          - prod
 
       action:
         description: "Choose action"
         required: true
         type: choice
-        options: [apply, destroy]
+        options:
+          - apply
+          - destroy
 
 permissions:
   id-token: write
@@ -24,11 +30,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+
   terraform:
+
     runs-on: ubuntu-latest
-    timeout-minutes: 60   # 👈 IMPORTANT
-    
-    environment: ${{ github.event.inputs.environment }}
+
+    timeout-minutes: 90
+
+    environment:
+      ${{ github.event.inputs.environment }}
 
     defaults:
       run:
@@ -37,45 +47,92 @@ jobs:
     env:
       TF_IN_AUTOMATION: true
 
-      TF_VAR_databricks_host: ${{ secrets.DATABRICKS_HOST }}
-      TF_VAR_databricks_token: ${{ secrets.DATABRICKS_TOKEN }}
+      TF_VAR_databricks_host:
+        ${{ secrets.DATABRICKS_HOST }}
+
+      TF_VAR_databricks_token:
+        ${{ secrets.DATABRICKS_TOKEN }}
 
     steps:
+
+    #########################################
+    # CHECKOUT
+    #########################################
+
     - name: Checkout
       uses: actions/checkout@v4
 
+    #########################################
+    # CONFIGURE AWS
+    #########################################
+
     - name: Configure AWS (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
+
       with:
-        role-to-assume: arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
+        role-to-assume:
+          arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
+
         aws-region: ap-south-1
+
+    #########################################
+    # CREATE PEM FILE
+    #########################################
+
+    - name: Create EC2 PEM file
+      run: |
+
+        echo "${{ secrets.EC2_PRIVATE_KEY }}" > bastion-key-new.pem
+
+        chmod 400 bastion-key-new.pem
+
+    #########################################
+    # SETUP TERRAFORM
+    #########################################
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
+
       with:
         terraform_wrapper: false
 
-    # ---------------- INIT ----------------
+    #########################################
+    # TERRAFORM INIT
+    #########################################
+
     - name: Terraform Init
       run: |
+
         terraform init -upgrade \
           -backend-config="key=reward_loyality/${{ github.event.inputs.environment }}/terraform.tfstate"
 
-    # ---------------- VALIDATE ----------------
+    #########################################
+    # TERRAFORM VALIDATE
+    #########################################
+
     - name: Terraform Validate
       run: terraform validate
 
-    # ---------------- FORMAT ----------------
+    #########################################
+    # TERRAFORM FORMAT CHECK
+    #########################################
+
     - name: Terraform Format Check
       run: terraform fmt -check
 
-    # ---------------- PLAN ----------------
+    #########################################
+    # TERRAFORM PLAN
+    #########################################
+
     - name: Terraform Plan
       shell: bash
+
       run: |
+
         set +e
 
         terraform plan \
+          -parallelism=20 \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
           -out=tfplan
 
@@ -84,26 +141,94 @@ jobs:
         echo "Terraform exit code: $EXIT_CODE"
 
         if [ "$EXIT_CODE" -eq 1 ]; then
+
           echo "❌ Terraform plan failed"
+
           exit 1
         fi
 
-        echo "✅ Plan successful"
+        echo "✅ Terraform plan successful"
 
-    # ---------------- APPLY ----------------
+    #########################################
+    # TERRAFORM APPLY
+    #########################################
+
     - name: Terraform Apply
       if: github.event.inputs.action == 'apply'
-      run: terraform apply -auto-approve tfplan
 
-    # ---------------- DESTROY ----------------
-    - name: Block Prod Destroy
-      if: github.event.inputs.action == 'destroy' && github.event.inputs.environment == 'prod'
       run: |
+
+        terraform apply \
+          -parallelism=20 \
+          -auto-approve \
+          tfplan
+
+    #########################################
+    # WAIT FOR APACHE HOP
+    #########################################
+
+    - name: Wait for Apache Hop Server
+      if: github.event.inputs.action == 'apply'
+
+      shell: bash
+
+      run: |
+
+        echo "Fetching EC2 public IP..."
+
+        PUBLIC_IP=$(terraform output -raw bastion_public_ip)
+
+        echo "EC2 Public IP: $PUBLIC_IP"
+
+        echo "Waiting for Apache Hop server..."
+
+        ATTEMPTS=40
+
+        COUNT=0
+
+        until curl -s "http://$PUBLIC_IP:8080" >/dev/null 2>&1
+        do
+
+          COUNT=$((COUNT+1))
+
+          echo "⏳ Attempt $COUNT/$ATTEMPTS - Hop not ready yet..."
+
+          if [ $COUNT -ge $ATTEMPTS ]; then
+
+            echo "❌ Apache Hop server did not start in time"
+
+            exit 1
+          fi
+
+          sleep 30
+        done
+
+        echo "✅ Apache Hop server is reachable"
+
+    #########################################
+    # BLOCK PROD DESTROY
+    #########################################
+
+    - name: Block Prod Destroy
+      if: github.event.inputs.action == 'destroy' &&
+          github.event.inputs.environment == 'prod'
+
+      run: |
+
         echo "❌ Destroy not allowed for PROD"
+
         exit 1
+
+    #########################################
+    # TERRAFORM DESTROY
+    #########################################
 
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
+
       run: |
-        terraform destroy -auto-approve \
+
+        terraform destroy \
+          -parallelism=20 \
+          -auto-approve \
           -var-file=environments/${{ github.event.inputs.environment }}.tfvars

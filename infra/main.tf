@@ -58,7 +58,8 @@ module "ec2" {
 
   db_password = var.db_password
 
-  db_name = local.db_name
+  db_name          = local.db_name
+  private_key_path = "${path.root}/bastion-key-new.pem"
 }
 
 # ✅ SG RULE AFTER BOTH MODULES
