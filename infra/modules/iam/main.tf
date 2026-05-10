@@ -50,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
 
 resource "aws_iam_role" "dms_vpc_role" {
 
-  name = "dms-vpc-role"
+  name = "dms-vpc-role-${var.env}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -115,7 +115,7 @@ resource "aws_iam_role_policy_attachment" "dms_attach" {
 
 resource "aws_iam_role" "dms_logs_role" {
 
-  name = "dms-cloudwatch-logs-role"
+  name = "dms-cloudwatch-logs-role-${var.env}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
