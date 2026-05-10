@@ -164,46 +164,19 @@ jobs:
           tfplan
 
     #########################################
-    # WAIT FOR APACHE HOP
+    # DISPLAY OUTPUTS
     #########################################
 
-    - name: Wait for Apache Hop Server
+    - name: Display Terraform Outputs
       if: github.event.inputs.action == 'apply'
-
-      shell: bash
 
       run: |
 
-        echo "Fetching EC2 public IP..."
+        echo "======================================"
+        echo "Terraform Outputs"
+        echo "======================================"
 
-        PUBLIC_IP=$(terraform output -raw bastion_public_ip)
-
-        echo "EC2 Public IP: $PUBLIC_IP"
-
-        echo "Waiting for Apache Hop server..."
-
-        ATTEMPTS=40
-
-        COUNT=0
-
-        until curl -s "http://$PUBLIC_IP:8080" >/dev/null 2>&1
-        do
-
-          COUNT=$((COUNT+1))
-
-          echo "⏳ Attempt $COUNT/$ATTEMPTS - Hop not ready yet..."
-
-          if [ $COUNT -ge $ATTEMPTS ]; then
-
-            echo "❌ Apache Hop server did not start in time"
-
-            exit 1
-          fi
-
-          sleep 30
-        done
-
-        echo "✅ Apache Hop server is reachable"
+        terraform output
 
     #########################################
     # BLOCK PROD DESTROY
