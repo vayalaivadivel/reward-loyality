@@ -17,7 +17,9 @@ resource "aws_instance" "bastion" {
   })
 
   tags = {
-    Name = var.name
+    Name    = var.name
+    Version = "v2"
   }
-  iam_instance_profile = var.instance_profile_name
+  user_data_replace_on_change = true
+  iam_instance_profile        = var.instance_profile_name
 }
