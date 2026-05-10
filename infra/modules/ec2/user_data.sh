@@ -88,18 +88,51 @@ mkdir -p /opt/hop
 
 cd /opt/hop
 
+#########################################
+# DOWNLOAD HOP
+#########################################
+
 wget https://downloads.apache.org/hop/2.15.0/apache-hop-client-2.15.0.zip
+
+#########################################
+# UNZIP
+#########################################
 
 unzip apache-hop-client-2.15.0.zip
 
-cd hop
+#########################################
+# CONFIGURE HOP SERVER
+#########################################
+
+cd /opt/hop/hop
+
+# Expose Hop server externally
+sed -i \
+'s/<hostname>localhost<\/hostname>/<hostname>0.0.0.0<\/hostname>/g' \
+hop-config/hop-server-config.xml
+
+#########################################
+# START HOP SERVER
+#########################################
+
+chmod +x hop-server.sh
 
 nohup ./hop-server.sh \
-  -u admin \
-  -p admin \
-  8080 > /var/log/hop-server.log 2>&1 &
+  > /var/log/hop-server.log 2>&1 &
 
-echo "✅ Apache Hop Server Started"
+#########################################
+# VERIFY STARTUP
+#########################################
+
+sleep 20
+
+if ss -tulnp | grep 8080 >/dev/null 2>&1; then
+    echo "✅ Apache Hop Server Started Successfully"
+else
+    echo "❌ Apache Hop Server Failed To Start"
+    cat /var/log/hop-server.log
+    exit 1
+fi
 
 
 echo "===== USER DATA SCRIPT COMPLETED SUCCESSFULLY ====="
