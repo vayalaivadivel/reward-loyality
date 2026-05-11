@@ -22,7 +22,7 @@ apt-get update -y
 # INSTALL REQUIRED PACKAGES
 #########################################
 
-echo "Installing Java, unzip, nginx, curl..."
+echo "Installing required packages..."
 
 apt-get install -y \
   openjdk-17-jdk \
@@ -54,6 +54,8 @@ if ! command -v mysql >/dev/null 2>&1; then
 fi
 
 echo "✅ MySQL client installed successfully"
+
+mysql --version
 
 #########################################
 # VERIFY JAVA
@@ -157,24 +159,26 @@ fi
 # CREATE HOP DIRECTORY
 #########################################
 
+echo "Creating Apache Hop directory..."
+
 mkdir -p /opt/hop
 
 cd /opt/hop
 
 #########################################
-# DOWNLOAD APACHE HOP
+# DOWNLOAD APACHE HOP WEB PACKAGE
 #########################################
 
-echo "Downloading Apache Hop..."
+echo "Downloading Apache Hop Web package..."
 
-wget -O apache-hop-client-2.15.0.zip \
-https://archive.apache.org/dist/hop/2.15.0/apache-hop-client-2.15.0.zip
+wget -O apache-hop-web.zip \
+https://archive.apache.org/dist/hop/2.15.0/apache-hop-web-2.15.0.zip
 
 #########################################
 # VERIFY DOWNLOAD
 #########################################
 
-if [ ! -f apache-hop-client-2.15.0.zip ]; then
+if [ ! -f apache-hop-web.zip ]; then
 
   echo "❌ Apache Hop download failed"
 
@@ -189,7 +193,7 @@ echo "✅ Apache Hop downloaded successfully"
 
 rm -rf /opt/hop/hop || true
 
-rm -rf /opt/hop/apache-hop-client-2.15.0 || true
+rm -rf /opt/hop/apache-hop-web-2.15.0 || true
 
 #########################################
 # EXTRACT APACHE HOP
@@ -197,21 +201,32 @@ rm -rf /opt/hop/apache-hop-client-2.15.0 || true
 
 echo "Extracting Apache Hop..."
 
-unzip -o apache-hop-client-2.15.0.zip
-
-#########################################
-# RENAME DIRECTORY
-#########################################
-
-mv apache-hop-client-2.15.0 hop
+unzip -o apache-hop-web.zip
 
 #########################################
 # VERIFY EXTRACTION
 #########################################
 
-if [ ! -f /opt/hop/hop/hop-server.sh ]; then
+if [ ! -d /opt/hop/apache-hop-web-2.15.0 ]; then
 
   echo "❌ Apache Hop extraction failed"
+
+  exit 1
+fi
+
+#########################################
+# RENAME DIRECTORY
+#########################################
+
+mv apache-hop-web-2.15.0 hop
+
+#########################################
+# VERIFY HOP FILES
+#########################################
+
+if [ ! -f /opt/hop/hop/hop-server.sh ]; then
+
+  echo "❌ hop-server.sh not found"
 
   exit 1
 fi
@@ -236,10 +251,10 @@ nohup /opt/hop/hop/hop-server.sh \
 > /var/log/hop-server.log 2>&1 &
 
 #########################################
-# WAIT FOR SERVER
+# WAIT FOR HOP STARTUP
 #########################################
 
-echo "Waiting for Hop server startup..."
+echo "Waiting for Apache Hop startup..."
 
 sleep 40
 
@@ -249,7 +264,7 @@ sleep 40
 
 if ss -tulnp | grep 8080 >/dev/null 2>&1; then
 
-    echo "✅ Apache Hop internal server started"
+    echo "✅ Apache Hop server started successfully"
 
 else
 
@@ -278,6 +293,8 @@ server {
         proxy_set_header Host \$host;
 
         proxy_set_header X-Real-IP \$remote_addr;
+
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 }
 EOF
@@ -327,7 +344,7 @@ else
 fi
 
 #########################################
-# DISPLAY PORTS
+# DISPLAY ACTIVE PORTS
 #########################################
 
 echo "===== ACTIVE PORTS ====="
