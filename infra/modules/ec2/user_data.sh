@@ -47,9 +47,7 @@ apt-get install -y mysql-client-core-8.0
 #########################################
 
 if ! command -v mysql >/dev/null 2>&1; then
-
     echo "❌ MySQL client installation failed"
-
     exit 1
 fi
 
@@ -62,9 +60,7 @@ mysql --version
 #########################################
 
 if ! command -v java >/dev/null 2>&1; then
-
     echo "❌ Java installation failed"
-
     exit 1
 fi
 
@@ -73,11 +69,10 @@ echo "✅ Java installed successfully"
 java -version
 
 #########################################
-# DISPLAY DB INFO
+# DISPLAY DATABASE INFO
 #########################################
 
 echo "Using RDS host: ${rds_host}"
-
 echo "Using DB name: ${db_name}"
 
 #########################################
@@ -101,9 +96,7 @@ do
   echo "⏳ Attempt $COUNT/$RETRIES: RDS not ready yet..."
 
   if [ $COUNT -ge $RETRIES ]; then
-
     echo "❌ RDS not reachable after retries"
-
     exit 1
   fi
 
@@ -121,7 +114,6 @@ echo "Creating SQL initialization file..."
 echo "${init_sql_b64}" | base64 -d > /home/ubuntu/init.sql
 
 chown ubuntu:ubuntu /home/ubuntu/init.sql
-
 chmod 600 /home/ubuntu/init.sql
 
 echo "✅ SQL file created"
@@ -143,15 +135,11 @@ mysql \
 #########################################
 
 if [ $? -eq 0 ]; then
-
   echo "✅ DB initialized successfully" \
     | tee /home/ubuntu/db_init.log
-
 else
-
   echo "❌ DB initialization failed" \
     | tee /home/ubuntu/db_init.log
-
   exit 1
 fi
 
@@ -166,22 +154,20 @@ mkdir -p /opt/hop
 cd /opt/hop
 
 #########################################
-# DOWNLOAD APACHE HOP WEB PACKAGE
+# DOWNLOAD APACHE HOP
 #########################################
 
-echo "Downloading Apache Hop Web package..."
+echo "Downloading Apache Hop..."
 
-wget -O apache-hop-web.zip \
-https://archive.apache.org/dist/hop/2.15.0/apache-hop-web-2.15.0.zip
+wget -O apache-hop-client.zip \
+https://archive.apache.org/dist/hop/2.15.0/apache-hop-client-2.15.0.zip
 
 #########################################
 # VERIFY DOWNLOAD
 #########################################
 
-if [ ! -f apache-hop-web.zip ]; then
-
+if [ ! -s apache-hop-client.zip ]; then
   echo "❌ Apache Hop download failed"
-
   exit 1
 fi
 
@@ -193,41 +179,40 @@ echo "✅ Apache Hop downloaded successfully"
 
 rm -rf /opt/hop/hop || true
 
-rm -rf /opt/hop/apache-hop-web-2.15.0 || true
-
 #########################################
 # EXTRACT APACHE HOP
 #########################################
 
 echo "Extracting Apache Hop..."
 
-unzip -o apache-hop-web.zip
+unzip -o apache-hop-client.zip
 
 #########################################
-# VERIFY EXTRACTION
+# DETECT EXTRACTED DIRECTORY
 #########################################
 
-if [ ! -d /opt/hop/apache-hop-web-2.15.0 ]; then
+HOP_EXTRACTED_DIR=$(find /opt/hop -maxdepth 1 -type d -name "apache-hop*" | head -n 1)
 
-  echo "❌ Apache Hop extraction failed"
-
+if [ -z "$HOP_EXTRACTED_DIR" ]; then
+  echo "❌ Apache Hop extraction directory not found"
   exit 1
 fi
+
+echo "Detected Hop directory: $HOP_EXTRACTED_DIR"
 
 #########################################
 # RENAME DIRECTORY
 #########################################
 
-mv apache-hop-web-2.15.0 hop
+mv "$HOP_EXTRACTED_DIR" /opt/hop/hop
 
 #########################################
 # VERIFY HOP FILES
 #########################################
 
 if [ ! -f /opt/hop/hop/hop-server.sh ]; then
-
   echo "❌ hop-server.sh not found"
-
+  ls -lrt /opt/hop/hop || true
   exit 1
 fi
 
@@ -242,7 +227,7 @@ chown -R ubuntu:ubuntu /opt/hop
 chmod +x /opt/hop/hop/*.sh
 
 #########################################
-# START HOP SERVER
+# START APACHE HOP SERVER
 #########################################
 
 echo "Starting Apache Hop server..."
@@ -251,27 +236,22 @@ nohup /opt/hop/hop/hop-server.sh \
 > /var/log/hop-server.log 2>&1 &
 
 #########################################
-# WAIT FOR HOP STARTUP
+# WAIT FOR STARTUP
 #########################################
 
 echo "Waiting for Apache Hop startup..."
 
-sleep 40
+sleep 60
 
 #########################################
 # VERIFY HOP SERVER
 #########################################
 
 if ss -tulnp | grep 8080 >/dev/null 2>&1; then
-
     echo "✅ Apache Hop server started successfully"
-
 else
-
     echo "❌ Apache Hop failed to start"
-
     cat /var/log/hop-server.log || true
-
     exit 1
 fi
 
@@ -306,10 +286,6 @@ EOF
 ln -sf /etc/nginx/sites-available/hop \
 /etc/nginx/sites-enabled/hop
 
-#########################################
-# REMOVE DEFAULT SITE
-#########################################
-
 rm -f /etc/nginx/sites-enabled/default
 
 #########################################
@@ -333,13 +309,9 @@ systemctl enable nginx
 sleep 10
 
 if ss -tulnp | grep 8081 >/dev/null 2>&1; then
-
     echo "✅ NGINX reverse proxy started successfully"
-
 else
-
     echo "❌ NGINX failed to start"
-
     exit 1
 fi
 
