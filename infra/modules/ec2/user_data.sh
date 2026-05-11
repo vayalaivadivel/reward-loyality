@@ -19,18 +19,28 @@ echo "Updating system packages..."
 apt-get update -y
 
 #########################################
-# INSTALL MYSQL + JAVA + UTILITIES
+# INSTALL REQUIRED PACKAGES
 #########################################
 
-echo "Installing required packages..."
+echo "Installing Java, unzip, nginx, curl..."
 
 apt-get install -y \
-  mysql-client \
-  default-mysql-client \
   openjdk-17-jdk \
   wget \
   unzip \
-  nginx || true
+  nginx \
+  curl \
+  net-tools
+
+#########################################
+# INSTALL MYSQL CLIENT
+#########################################
+
+echo "Installing MySQL client..."
+
+apt-get install -y mysql-client || \
+apt-get install -y default-mysql-client || \
+apt-get install -y mysql-client-core-8.0
 
 #########################################
 # VERIFY MYSQL CLIENT
@@ -44,6 +54,21 @@ if ! command -v mysql >/dev/null 2>&1; then
 fi
 
 echo "✅ MySQL client installed successfully"
+
+#########################################
+# VERIFY JAVA
+#########################################
+
+if ! command -v java >/dev/null 2>&1; then
+
+    echo "❌ Java installation failed"
+
+    exit 1
+fi
+
+echo "✅ Java installed successfully"
+
+java -version
 
 #########################################
 # DISPLAY DB INFO
@@ -159,17 +184,31 @@ fi
 echo "✅ Apache Hop downloaded successfully"
 
 #########################################
-# UNZIP APACHE HOP
+# CLEAN OLD INSTALLATION
+#########################################
+
+rm -rf /opt/hop/hop || true
+
+rm -rf /opt/hop/apache-hop-client-2.15.0 || true
+
+#########################################
+# EXTRACT APACHE HOP
 #########################################
 
 echo "Extracting Apache Hop..."
 
 unzip -o apache-hop-client-2.15.0.zip
 
-# Rename extracted folder cleanly
+#########################################
+# RENAME DIRECTORY
+#########################################
+
 mv apache-hop-client-2.15.0 hop
 
-# Verify extraction
+#########################################
+# VERIFY EXTRACTION
+#########################################
+
 if [ ! -f /opt/hop/hop/hop-server.sh ]; then
 
   echo "❌ Apache Hop extraction failed"
@@ -185,26 +224,27 @@ echo "✅ Apache Hop extracted successfully"
 
 chown -R ubuntu:ubuntu /opt/hop
 
+chmod +x /opt/hop/hop/*.sh
+
 #########################################
 # START HOP SERVER
 #########################################
 
 echo "Starting Apache Hop server..."
 
-chmod +x /opt/hop/hop/hop-server.sh
-
-sudo bash -c 'nohup /opt/hop/hop/hop-server.sh > /var/log/hop-server.log 2>&1 &'
-
-#########################################
-# WAIT FOR HOP INTERNAL PORT
-#########################################
-
-echo "Waiting for Hop internal port..."
-
-sleep 30
+nohup /opt/hop/hop/hop-server.sh \
+> /var/log/hop-server.log 2>&1 &
 
 #########################################
-# VERIFY HOP INTERNAL SERVER
+# WAIT FOR SERVER
+#########################################
+
+echo "Waiting for Hop server startup..."
+
+sleep 40
+
+#########################################
+# VERIFY HOP SERVER
 #########################################
 
 if ss -tulnp | grep 8080 >/dev/null 2>&1; then
@@ -256,7 +296,7 @@ ln -sf /etc/nginx/sites-available/hop \
 rm -f /etc/nginx/sites-enabled/default
 
 #########################################
-# VALIDATE NGINX CONFIG
+# VALIDATE NGINX
 #########################################
 
 nginx -t
@@ -292,7 +332,15 @@ fi
 
 echo "===== ACTIVE PORTS ====="
 
-sudo ss -tulnp | grep 808 || true
+ss -tulnp | grep 808 || true
+
+#########################################
+# TEST ENDPOINTS
+#########################################
+
+curl -I http://localhost:8080 || true
+
+curl -I http://localhost:8081 || true
 
 #########################################
 # COMPLETE
