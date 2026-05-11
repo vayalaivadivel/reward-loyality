@@ -164,13 +164,13 @@ echo "✅ Apache Hop downloaded successfully"
 
 echo "Extracting Apache Hop..."
 
-unzip apache-hop-client-2.15.0.zip
+unzip -o apache-hop-client-2.15.0.zip
 
-#########################################
-# VERIFY EXTRACTION
-#########################################
+# Rename extracted folder cleanly
+mv apache-hop-client-2.15.0 hop
 
-if [ ! -d /opt/hop/hop ]; then
+# Verify extraction
+if [ ! -f /opt/hop/hop/hop-server.sh ]; then
 
   echo "❌ Apache Hop extraction failed"
 
