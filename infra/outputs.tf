@@ -26,6 +26,17 @@ variable "ssh_user" {
   default = "ubuntu"
 }
 
-output "hop_url" {
-  value = "http://${module.ec2.public_ip}:8080/hop/runWorkflow"
+output "hop_alb_url" {
+
+  value = module.hop.alb_dns
+}
+
+output "hop_ecr_url" {
+  value = module.hop_ecr.repository_url
+}
+
+
+output "alb_dns" {
+
+  value = aws_lb.hop.dns_name
 }

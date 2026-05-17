@@ -82,12 +82,18 @@ module "databricks" {
 
 
 module "lambda" {
-  source          = "./modules/lambda"
-  env             = var.env
+
+  source = "./modules/lambda"
+
+  env = var.env
+
   lambda_role_arn = module.iam.lambda_role_arn
-  hop_url         = "http://${module.ec2.public_ip}:8080/hop/runWorkflow"
-  hop_username    = var.hop_username
-  hop_password    = var.hop_password
+
+  hop_url = "http://${module.hop.alb_dns}/hop/runWorkflow"
+
+  hop_username = var.hop_username
+
+  hop_password = var.hop_password
 }
 
 module "eventbridge" {
@@ -115,4 +121,22 @@ module "iam" {
   project   = var.project
   env       = var.env
   role_name = "${var.project}-${var.env}-role"
+}
+
+module "hop_ecr" {
+
+  source = "./modules/ecr"
+
+  repo_name = "glorytechsystems-platform-images"
+}
+
+module "hop" {
+
+  source = "./modules/hop"
+
+  env = var.env
+
+  public_subnets = module.vpc.public_subnets
+
+  vpc_id = module.vpc.vpc_id
 }
