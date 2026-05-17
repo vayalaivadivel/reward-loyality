@@ -80,3 +80,14 @@ node_modules/
 # ------------------------------
 *.bak
 *.tmp
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Lambda build artifacts
+*.zip
+
+# OS files
+.DS_Store
