@@ -1,4 +1,4 @@
-name: Infra-Setup
+name: Hop-deploy
 
 on:
   workflow_dispatch:
