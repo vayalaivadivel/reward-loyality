@@ -38,5 +38,5 @@ output "hop_ecr_url" {
 
 output "alb_dns" {
 
-  value = aws_lb.hop.dns_name
+  value = module.hop.alb_dns
 }
