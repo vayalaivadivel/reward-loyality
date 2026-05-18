@@ -30,9 +30,9 @@ resource "aws_security_group" "hop_ecs" {
 
   ingress {
 
-    from_port = 8080
+    from_port = 8081
 
-    to_port = 8080
+    to_port = 8081
 
     protocol = "tcp"
 
@@ -113,7 +113,7 @@ resource "aws_lb_target_group" "hop" {
 
   name = "reward-hop-tg-${var.env}"
 
-  port = 8080
+  port = 8081
 
   protocol = "HTTP"
 
@@ -123,9 +123,21 @@ resource "aws_lb_target_group" "hop" {
 
   health_check {
 
-    path = "/"
+    enabled = true
+
+    healthy_threshold = 2
+
+    unhealthy_threshold = 5
+
+    interval = 60
+
+    timeout = 30
+
+    path = "/hop/status/"
 
     protocol = "HTTP"
+
+    matcher = "200-399"
   }
 }
 
@@ -181,9 +193,9 @@ resource "aws_ecs_task_definition" "hop" {
 
         {
 
-          containerPort = 8080
+          containerPort = 8081
 
-          hostPort = 8080
+          hostPort = 8081
 
           protocol = "tcp"
         }
@@ -243,7 +255,7 @@ resource "aws_ecs_service" "hop" {
 
     container_name = "reward-loyalty-hop"
 
-    container_port = 8080
+    container_port = 8081
   }
 
   depends_on = [
