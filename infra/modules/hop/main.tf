@@ -111,7 +111,7 @@ resource "aws_lb" "hop" {
 
 resource "aws_lb_target_group" "hop" {
 
-  name = "reward-hop-tg-${var.env}"
+  name_prefix = "hop-"
 
   port = 8081
 
