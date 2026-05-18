@@ -190,28 +190,6 @@ resource "aws_ecs_task_definition" "hop" {
       ]
 
       ####################################################
-      # ECS HEALTH CHECK
-      ####################################################
-
-      healthCheck = {
-
-        command = [
-
-          "CMD-SHELL",
-
-          "wget -q --spider http://localhost:8080/hop/status/ || exit 1"
-        ]
-
-        interval = 30
-
-        timeout = 5
-
-        retries = 3
-
-        startPeriod = 120
-      }
-
-      ####################################################
       # CLOUDWATCH LOGS
       ####################################################
 
