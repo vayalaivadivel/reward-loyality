@@ -133,19 +133,6 @@ jobs:
             --region $AWS_REGION
 
       #######################################################
-      # WAIT FOR ECS STABILITY
-      #######################################################
-
-      - name: Wait For ECS Stability
-
-        run: |
-
-          aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER_NAME \
-            --services $ECS_SERVICE_NAME \
-            --region $AWS_REGION
-
-      #######################################################
       # DISPLAY SUCCESS
       #######################################################
 
