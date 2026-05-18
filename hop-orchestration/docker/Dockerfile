@@ -12,4 +12,4 @@ RUN chmod +x /files/scripts/*.sh || true
 
 EXPOSE 8080
 
-CMD ["/opt/hop/hop-server.sh"]
+CMD ["hop-server.sh"]
