@@ -31,11 +31,6 @@ output "hop_alb_url" {
   value = module.hop.alb_dns
 }
 
-output "hop_ecr_url" {
-  value = module.hop_ecr.repository_url
-}
-
-
 output "alb_dns" {
 
   value = module.hop.alb_dns

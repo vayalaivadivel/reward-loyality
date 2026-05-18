@@ -123,13 +123,6 @@ module "iam" {
   role_name = "${var.project}-${var.env}-role"
 }
 
-module "hop_ecr" {
-
-  source = "./modules/ecr"
-
-  repo_name = "glorytechsystems-platform-images"
-}
-
 module "hop" {
 
   source = "./modules/hop"
@@ -146,5 +139,5 @@ module "hop" {
 
   ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
 
-  ecr_repository_url = module.hop_ecr.repository_url
+  ecr_repository_url = "298493767003.dkr.ecr.ap-south-1.amazonaws.com/glorytechsystems-platform-images"
 }
