@@ -30,9 +30,9 @@ resource "aws_security_group" "hop_ecs" {
 
   ingress {
 
-    from_port = 8081
+    from_port = 8080
 
-    to_port = 8081
+    to_port = 8080
 
     protocol = "tcp"
 
@@ -198,9 +198,9 @@ resource "aws_ecs_task_definition" "hop" {
 
         {
 
-          containerPort = 8081
+          containerPort = 8080
 
-          hostPort = 8081
+          hostPort = 8080
 
           protocol = "tcp"
         }
@@ -260,7 +260,7 @@ resource "aws_ecs_service" "hop" {
 
     container_name = "reward-loyalty-hop"
 
-    container_port = 8081
+    container_port = 8080
   }
 
   depends_on = [
