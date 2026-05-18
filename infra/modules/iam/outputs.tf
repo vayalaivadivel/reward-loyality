@@ -17,3 +17,8 @@ output "dms_vpc_role_ready" {
 
   value = aws_iam_role_policy_attachment.dms_vpc_attach.id
 }
+
+output "ecs_task_execution_role_arn" {
+
+  value = aws_iam_role.ecs_task_execution.arn
+}
