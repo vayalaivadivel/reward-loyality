@@ -193,6 +193,28 @@ jobs:
         exit 1
 
     #########################################
+    # DELETE HOP ECR IMAGE
+    #########################################
+
+    - name: Delete Hop ECR Image
+      if: github.event.inputs.action == 'destroy'
+
+      run: |
+
+        echo "======================================"
+        echo "Deleting Hop Docker Image"
+        echo "======================================"
+
+        aws ecr batch-delete-image \
+          --repository-name glorytechsystems-platform-images \
+          --image-ids imageTag=reward-loyalty-${{ github.event.inputs.environment }} \
+          --region ap-south-1 || true
+
+        echo "======================================"
+        echo "Hop Docker Image Deleted"
+        echo "======================================"
+
+    #########################################
     # TERRAFORM DESTROY
     #########################################
 
