@@ -1,7 +1,17 @@
-name: Hop-deploy
+name: Hop-Deploy
 
 on:
+
+  push:
+
+    branches:
+      - main
+
+    paths:
+      - 'hop-orchestration/**'
+
   workflow_dispatch:
+
     inputs:
 
       environment:
@@ -13,195 +23,131 @@ on:
           - staging
           - prod
 
-      action:
-        description: "Choose action"
-        required: true
-        type: choice
-        options:
-          - apply
-          - destroy
-
 permissions:
   id-token: write
   contents: read
 
-concurrency:
-  group: terraform-${{ github.event.inputs.environment }}
-  cancel-in-progress: false
-
 jobs:
 
-  terraform:
+  hop-deploy:
 
     runs-on: ubuntu-latest
 
-    timeout-minutes: 90
-
-    environment:
-      ${{ github.event.inputs.environment }}
-
-    defaults:
-      run:
-        working-directory: infra
+    timeout-minutes: 60
 
     env:
-      TF_IN_AUTOMATION: true
 
-      TF_VAR_databricks_host:
-        ${{ secrets.DATABRICKS_HOST }}
+      AWS_REGION: ap-south-1
 
-      TF_VAR_databricks_token:
-        ${{ secrets.DATABRICKS_TOKEN }}
+      AWS_ACCOUNT_ID: 298493767003
+
+      ECR_REPOSITORY: glorytechsystems-platform-images
+
+      IMAGE_TAG: reward-loyalty-${{ github.event.inputs.environment || 'dev' }}
+
+      ECS_CLUSTER_NAME: reward-loyalty-ecs-${{ github.event.inputs.environment || 'dev' }}
+
+      ECS_SERVICE_NAME: reward-loyalty-hop-service-${{ github.event.inputs.environment || 'dev' }}
 
     steps:
 
-    #########################################
+    #######################################################
     # CHECKOUT
-    #########################################
+    #######################################################
 
     - name: Checkout
       uses: actions/checkout@v4
 
-    #########################################
+    #######################################################
     # CONFIGURE AWS
-    #########################################
+    #######################################################
 
-    - name: Configure AWS (OIDC)
+    - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
 
       with:
-        role-to-assume:
-          arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
+
+        role-to-assume: arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
 
         aws-region: ap-south-1
 
-    #########################################
-    # CREATE PEM FILE
-    #########################################
+    #######################################################
+    # LOGIN TO ECR
+    #######################################################
 
-    - name: Create EC2 PEM file
-      run: |
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > bastion-key-new.pem
+    #######################################################
+    # BUILD DOCKER IMAGE
+    #######################################################
 
-        chmod 400 bastion-key-new.pem
-
-    #########################################
-    # SETUP TERRAFORM
-    #########################################
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-
-      with:
-        terraform_wrapper: false
-
-    #########################################
-    # TERRAFORM INIT
-    #########################################
-
-    - name: Terraform Init
-      run: |
-
-        terraform init -upgrade \
-          -backend-config="key=reward_loyality/${{ github.event.inputs.environment }}/terraform.tfstate"
-
-    #########################################
-    # TERRAFORM VALIDATE
-    #########################################
-
-    - name: Terraform Validate
-      run: terraform validate
-
-    #########################################
-    # TERRAFORM FORMAT CHECK
-    #########################################
-
-    - name: Terraform Format Check
-      run: terraform fmt -check
-
-    #########################################
-    # TERRAFORM PLAN
-    #########################################
-
-    - name: Terraform Plan
-      shell: bash
+    - name: Build Docker Image
 
       run: |
 
-        set +e
+        docker build \
+          -t reward-loyalty-hop \
+          -f hop-orchestration/docker/Dockerfile \
+          ./hop-orchestration
 
-        terraform plan \
-          -parallelism=20 \
-          -var-file=environments/${{ github.event.inputs.environment }}.tfvars \
-          -out=tfplan
+    #######################################################
+    # TAG IMAGE
+    #######################################################
 
-        EXIT_CODE=$?
-
-        echo "Terraform exit code: $EXIT_CODE"
-
-        if [ "$EXIT_CODE" -eq 1 ]; then
-
-          echo "❌ Terraform plan failed"
-
-          exit 1
-        fi
-
-        echo "✅ Terraform plan successful"
-
-    #########################################
-    # TERRAFORM APPLY
-    #########################################
-
-    - name: Terraform Apply
-      if: github.event.inputs.action == 'apply'
+    - name: Tag Docker Image
 
       run: |
 
-        terraform apply \
-          -parallelism=20 \
-          -auto-approve \
-          tfplan
+        docker tag reward-loyalty-hop:latest \
+        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-    #########################################
-    # DISPLAY OUTPUTS
-    #########################################
+    #######################################################
+    # PUSH IMAGE TO ECR
+    #######################################################
 
-    - name: Display Terraform Outputs
-      if: github.event.inputs.action == 'apply'
+    - name: Push Docker Image
 
       run: |
 
-        echo "======================================"
-        echo "Terraform Outputs"
-        echo "======================================"
+        docker push \
+        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-        terraform output
+    #######################################################
+    # RESTART ECS SERVICE
+    #######################################################
 
-    #########################################
-    # BLOCK PROD DESTROY
-    #########################################
-
-    - name: Block Prod Destroy
-      if: github.event.inputs.action == 'destroy' &&
-          github.event.inputs.environment == 'prod'
+    - name: Restart ECS Service
 
       run: |
 
-        echo "❌ Destroy not allowed for PROD"
+        aws ecs update-service \
+          --cluster $ECS_CLUSTER_NAME \
+          --service $ECS_SERVICE_NAME \
+          --force-new-deployment \
+          --region $AWS_REGION
 
-        exit 1
+    #######################################################
+    # DISPLAY SUCCESS
+    #######################################################
 
-    #########################################
-    # TERRAFORM DESTROY
-    #########################################
-
-    - name: Terraform Destroy
-      if: github.event.inputs.action == 'destroy'
+    - name: Deployment Success
 
       run: |
 
-        terraform destroy \
-          -parallelism=20 \
-          -auto-approve \
-          -var-file=environments/${{ github.event.inputs.environment }}.tfvars
+        echo "======================================="
+        echo "Apache Hop Deployment Successful"
+        echo "======================================="
+
+        echo "ECR Repository:"
+        echo "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+
+        echo ""
+        echo "ECS Cluster:"
+        echo "$ECS_CLUSTER_NAME"
+
+        echo ""
+        echo "ECS Service:"
+        echo "$ECS_SERVICE_NAME"
+
+        echo "======================================="
