@@ -199,7 +199,7 @@ resource "aws_ecs_task_definition" "hop" {
 
           "CMD-SHELL",
 
-          "curl -f http://localhost:8080/hop/status/ || exit 1"
+          "wget -q --spider http://localhost:8080/hop/status/ || exit 1"
         ]
 
         interval = 30
@@ -208,7 +208,7 @@ resource "aws_ecs_task_definition" "hop" {
 
         retries = 3
 
-        startPeriod = 60
+        startPeriod = 120
       }
 
       ####################################################
