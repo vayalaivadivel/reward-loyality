@@ -17,7 +17,9 @@ on:
       environment:
         description: "Select environment"
         required: true
+        default: dev
         type: choice
+
         options:
           - dev
           - staging
@@ -41,9 +43,13 @@ jobs:
 
       AWS_ACCOUNT_ID: 298493767003
 
+      ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
       ECR_REPOSITORY: glorytechsystems-platform-images
 
       IMAGE_TAG: reward-loyalty-${{ github.event.inputs.environment || 'dev' }}
+
+      IMAGE_URI: 298493767003.dkr.ecr.ap-south-1.amazonaws.com/glorytechsystems-platform-images:reward-loyalty-${{ github.event.inputs.environment || 'dev' }}
 
       ECS_CLUSTER_NAME: reward-loyalty-ecs-${{ github.event.inputs.environment || 'dev' }}
 
@@ -51,103 +57,126 @@ jobs:
 
     steps:
 
-    #######################################################
-    # CHECKOUT
-    #######################################################
+      #######################################################
+      # CHECKOUT
+      #######################################################
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    #######################################################
-    # CONFIGURE AWS
-    #######################################################
+      #######################################################
+      # CONFIGURE AWS
+      #######################################################
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
 
-      with:
+        with:
 
-        role-to-assume: arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
+          role-to-assume: arn:aws:iam::298493767003:role/reward-loyality-githubaction-role
 
-        aws-region: ap-south-1
+          aws-region: ap-south-1
 
-    #######################################################
-    # LOGIN TO ECR
-    #######################################################
+      #######################################################
+      # LOGIN TO ECR
+      #######################################################
 
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-    #######################################################
-    # BUILD DOCKER IMAGE
-    #######################################################
+      #######################################################
+      # BUILD DOCKER IMAGE
+      #######################################################
 
-    - name: Build Docker Image
+      - name: Build Docker Image
 
-      run: |
+        run: |
 
-        docker build \
-          -t reward-loyalty-hop \
-          -f hop-orchestration/docker/Dockerfile \
-          ./hop-orchestration
+          docker build \
+            --no-cache \
+            -t reward-loyalty-hop \
+            -f hop-orchestration/docker/Dockerfile \
+            ./hop-orchestration
 
-    #######################################################
-    # TAG IMAGE
-    #######################################################
+      #######################################################
+      # TAG DOCKER IMAGE
+      #######################################################
 
-    - name: Tag Docker Image
+      - name: Tag Docker Image
 
-      run: |
+        run: |
 
-        docker tag reward-loyalty-hop:latest \
-        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag reward-loyalty-hop:latest $IMAGE_URI
 
-    #######################################################
-    # PUSH IMAGE TO ECR
-    #######################################################
+      #######################################################
+      # PUSH IMAGE TO ECR
+      #######################################################
 
-    - name: Push Docker Image
+      - name: Push Docker Image
 
-      run: |
+        run: |
 
-        docker push \
-        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $IMAGE_URI
 
-    #######################################################
-    # RESTART ECS SERVICE
-    #######################################################
+      #######################################################
+      # FORCE ECS DEPLOYMENT
+      #######################################################
 
-    - name: Restart ECS Service
+      - name: Restart ECS Service
 
-      run: |
+        run: |
 
-        aws ecs update-service \
-          --cluster $ECS_CLUSTER_NAME \
-          --service $ECS_SERVICE_NAME \
-          --force-new-deployment \
-          --region $AWS_REGION
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER_NAME \
+            --service $ECS_SERVICE_NAME \
+            --force-new-deployment \
+            --region $AWS_REGION
 
-    #######################################################
-    # DISPLAY SUCCESS
-    #######################################################
+      #######################################################
+      # WAIT FOR ECS STABILITY
+      #######################################################
 
-    - name: Deployment Success
+      - name: Wait For ECS Stability
 
-      run: |
+        run: |
 
-        echo "======================================="
-        echo "Apache Hop Deployment Successful"
-        echo "======================================="
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER_NAME \
+            --services $ECS_SERVICE_NAME \
+            --region $AWS_REGION
 
-        echo "ECR Repository:"
-        echo "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+      #######################################################
+      # DISPLAY SUCCESS
+      #######################################################
 
-        echo ""
-        echo "ECS Cluster:"
-        echo "$ECS_CLUSTER_NAME"
+      - name: Deployment Successful
 
-        echo ""
-        echo "ECS Service:"
-        echo "$ECS_SERVICE_NAME"
+        run: |
 
-        echo "======================================="
+          echo "======================================="
+
+          echo "Apache Hop Deployment Successful"
+
+          echo "======================================="
+
+          echo "Environment: $ENVIRONMENT"
+
+          echo ""
+
+          echo "Image URI:"
+
+          echo "$IMAGE_URI"
+
+          echo ""
+
+          echo "ECS Cluster:"
+
+          echo "$ECS_CLUSTER_NAME"
+
+          echo ""
+
+          echo "ECS Service:"
+
+          echo "$ECS_SERVICE_NAME"
+
+          echo "======================================="
