@@ -123,22 +123,19 @@ resource "aws_dms_endpoint" "mysql_target" {
 #########################################
 # DMS REPLICATION TASK
 #########################################
-
 resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   replication_task_id = "${var.env}-mysql-full-load-task"
 
-  migration_type = "full-load"
+  migration_type = "full-load-and-cdc"
+
+  cdc_start_position = "now"
 
   replication_instance_arn = aws_dms_replication_instance.dms_instance.replication_instance_arn
 
   source_endpoint_arn = aws_dms_endpoint.mysql_source.endpoint_arn
 
   target_endpoint_arn = aws_dms_endpoint.mysql_target.endpoint_arn
-
-  #########################################
-  # TABLE MAPPINGS
-  #########################################
 
   table_mappings = jsonencode({
 
@@ -162,10 +159,6 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
       }
     ]
   })
-
-  #########################################
-  # TASK SETTINGS
-  #########################################
 
   replication_task_settings = jsonencode({
 
