@@ -20,6 +20,33 @@ resource "aws_dms_replication_subnet_group" "this" {
 }
 
 #########################################
+# DMS SECURITY GROUP
+#########################################
+
+resource "aws_security_group" "dms_sg" {
+
+  name = "${var.env}-dms-sg"
+
+  vpc_id = var.vpc_id
+
+  egress {
+
+    from_port = 0
+
+    to_port = 0
+
+    protocol = "-1"
+
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.env}-dms-sg"
+  }
+}
+
+
+#########################################
 # DMS REPLICATION INSTANCE
 #########################################
 
@@ -36,7 +63,7 @@ resource "aws_dms_replication_instance" "dms_instance" {
   replication_subnet_group_id = aws_dms_replication_subnet_group.this.id
 
   vpc_security_group_ids = [
-    var.security_group_id
+    aws_security_group.dms_sg.id
   ]
 
   multi_az = false
@@ -162,7 +189,7 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
     FullLoadSettings = {
 
-      TargetTablePrepMode = "DO_NOTHING"
+      TargetTablePrepMode = "DROP_AND_CREATE"
 
       CreatePkAfterFullLoad = false
 

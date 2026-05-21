@@ -40,6 +40,21 @@ resource "aws_security_group" "rds" {
   tags = {
     Name = "${var.name}-rds-sg"
   }
+
+  ingress {
+
+    description = "MySQL from DMS"
+
+    from_port = 3306
+
+    to_port = 3306
+
+    protocol = "tcp"
+
+    security_groups = [
+      var.dms_security_group_id
+    ]
+  }
 }
 
 #########################################

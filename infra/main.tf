@@ -15,12 +15,13 @@ module "vpc" {
 module "rds" {
   source = "./modules/rds"
 
-  name            = local.rds_name
-  db_name         = local.db_name
-  username        = var.db_username
-  password        = var.db_password
-  private_subnets = module.vpc.private_subnets
-  vpc_id          = module.vpc.vpc_id
+  name                  = local.rds_name
+  db_name               = local.db_name
+  username              = var.db_username
+  password              = var.db_password
+  private_subnets       = module.vpc.private_subnets
+  vpc_id                = module.vpc.vpc_id
+  dms_security_group_id = module.dms.dms_security_group_id
 }
 
 # ✅ BASTION AFTER RDS
@@ -114,6 +115,7 @@ module "dms" {
   dms_vpc_role_dependency = module.iam.dms_vpc_role_ready
   security_group_id       = module.ec2.sg_id
   private_subnets         = module.vpc.private_subnets
+  vpc_id                  = module.vpc.vpc_id
 }
 
 module "iam" {

@@ -10,3 +10,7 @@ variable "private_subnets" {
 variable "vpc_id" {
   type = string
 }
+variable "dms_security_group_id" {
+
+  type = string
+}
