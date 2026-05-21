@@ -129,8 +129,6 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
   migration_type = "full-load-and-cdc"
 
-  cdc_start_position = "now"
-
   replication_instance_arn = aws_dms_replication_instance.dms_instance.replication_instance_arn
 
   source_endpoint_arn = aws_dms_endpoint.mysql_source.endpoint_arn
