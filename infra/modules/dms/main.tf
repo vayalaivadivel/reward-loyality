@@ -175,9 +175,9 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
 
         "object-locator" = {
 
-          "schema-name" = "%"
+          "schema-name" = "rldb"
 
-          "table-name" = "%"
+          "table-name" = "offer"
         }
 
         "rule-action" = "include"
