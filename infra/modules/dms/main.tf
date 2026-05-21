@@ -125,7 +125,7 @@ resource "aws_dms_endpoint" "mysql_target" {
 #########################################
 resource "aws_dms_replication_task" "mysql_cdc_task" {
 
-  replication_task_id = "${var.env}-mysql-full-load-task"
+  replication_task_id = "${var.env}-mysql-cdc-task"
 
   migration_type = "full-load-and-cdc"
 
@@ -203,6 +203,6 @@ resource "aws_dms_replication_task" "mysql_cdc_task" {
   ]
 
   tags = {
-    Name = "${var.env}-mysql-full-load-task"
+    Name = "${var.env}-mysql-cdc-task"
   }
 }
